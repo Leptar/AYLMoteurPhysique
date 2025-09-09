@@ -34,7 +34,7 @@ public:
     float getAx() const { return _ax; }
     float getAy() const { return _ay; }
     float getAz() const { return _az; }
-    void setAcceleration(float ax, float ay, float az) { _ax = ax; ay = ay; az = az; }
+    void setAcceleration(float ax, float ay, float az) { _ax = ax; _ay = ay; _az = az; }
 
     void setMasse(float masse) {
         if (masse <= 0.0f) _inverseMasse = 0.0f;  
