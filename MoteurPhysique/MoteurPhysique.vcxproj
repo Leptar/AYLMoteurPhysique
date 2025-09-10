@@ -226,10 +226,12 @@
 		</ClCompile>
 	</ItemDefinitionGroup>
 	<ItemGroup>
+		<ClCompile Include="src\3DVector.cpp" />
 		<ClCompile Include="src\main.cpp" />
 		<ClCompile Include="src\ofApp.cpp" />
 	</ItemGroup>
 	<ItemGroup>
+		<ClInclude Include="src\3DVector.h" />
 		<ClInclude Include="src\ofApp.h" />
 	</ItemGroup>
 	<ItemGroup>
