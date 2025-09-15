@@ -12,6 +12,10 @@ Particule::Particule(Vector3D oldPos,
     setMasse(masse);
 }
 
+Vector3D Particule::getOldPos() const {
+    return _oldPos;
+}
+
 Vector3D Particule::getPos() const {
     return _pos;
 }
