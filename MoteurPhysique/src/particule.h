@@ -17,8 +17,7 @@ private:
     float _inverseMasse;
 
 public:
-    Particule(Vector3D oldPos,
-              Vector3D pos,
+    Particule(Vector3D pos,
               Vector3D vel,
               Vector3D force, 
               float masse = 1.0);

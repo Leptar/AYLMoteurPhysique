@@ -1,7 +1,6 @@
 #include "Particule.h"
 
-Particule::Particule(Vector3D oldPos,
-                     Vector3D pos,
+Particule::Particule(Vector3D pos,
                      Vector3D vel,
                      Vector3D force, 
                      float masse)
@@ -9,6 +8,7 @@ Particule::Particule(Vector3D oldPos,
       _vel(vel), 
       _force(force) 
 {
+    _oldPos = _pos - _vel * 0.016f; // 60fps
     setMasse(masse);
 }
 
