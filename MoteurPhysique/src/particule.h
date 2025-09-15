@@ -3,9 +3,9 @@
 
 class Particule {
 private:
-    double _x;
-    double _y;
-    double _z;
+    double _px;
+    double _py;
+    double _pz;
 
     double _vx;
     double _vy;

@@ -4,16 +4,16 @@ Particule::Particule(double px, double py, double pz,
                      double vx, double vy, double vz,
                      double ax, double ay, double az,
                      double masse)
-    : _x(px), _y(py), _z(pz),
+    : _px(px), _py(py), _pz(pz),
       _vx(vx), _vy(vy), _vz(vz),
       _ax(ax), _ay(ay), _az(az) 
 {
     setMasse(masse);
 }
 
-double Particule::getX() const { return _x; }
-double Particule::getY() const { return _y; }
-double Particule::getZ() const { return _z; }
+double Particule::getX() const { return _px; }
+double Particule::getY() const { return _py; }
+double Particule::getZ() const { return _pz; }
 
 double Particule::getVx() const { return _vx; }
 double Particule::getVy() const { return _vy; }
@@ -26,9 +26,9 @@ double Particule::getAz() const { return _az; }
 double Particule::getInverseMasse() const { return _inverseMasse; }
 
 void Particule::setPosition(double px, double py, double pz) {
-    _x = px;
-    _y = py;
-    _z = pz;
+    _px = px;
+    _py = py;
+    _pz = pz;
 }
 
 void Particule::setVitesse(double vx, double vy, double vz) {
