@@ -24,7 +24,7 @@ public:
     float GetNorm();
     float GetSquareNorm();
 
-protected:
+public:
     float x, y, z;
 };
 
