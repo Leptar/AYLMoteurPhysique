@@ -1,6 +1,7 @@
 #include "Particule.h"
 
-Particule::Particule(Vector3D pos,
+Particule::Particule(Vector3D oldPos,
+                     Vector3D pos,
                      Vector3D vel,
                      Vector3D force, 
                      float masse)
@@ -25,6 +26,14 @@ Vector3D Particule::getForce() const {
 
 float Particule::getInverseMasse() const {
     return _inverseMasse;
+}
+
+void Particule::setOldPosition(float px, float py, float pz) {
+    _oldPos = Vector3D(px, py, pz);
+}
+
+void Particule::setOldPosition(Vector3D oldPos) {
+    _oldPos = oldPos;
 }
 
 void Particule::setPosition(float px, float py, float pz) {
@@ -57,4 +66,18 @@ void Particule::setMasse(float masse) {
     } else {
         _inverseMasse = 1.0 / masse;
     }
+}
+
+void Particule::integrerVerlet(float dt) {
+    if (_inverseMasse <= 0.0) return; 
+
+    const float damping = 0.7; 
+
+    Vector3D acc = _force * _inverseMasse;
+    Vector3D newPos = _pos * 2.f - _oldPos + acc * std::pow(dt,2);
+
+    _oldPos = _pos;
+    _pos = newPos;
+
+    _vel = _vel * damping + acc * dt;  
 }
