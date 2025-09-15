@@ -1,50 +1,58 @@
 #include "Particule.h"
 
-Particule::Particule(double px, double py, double pz,
-                     double vx, double vy, double vz,
-                     double ax, double ay, double az,
-                     double masse)
-    : _px(px), _py(py), _pz(pz),
-      _vx(vx), _vy(vy), _vz(vz),
-      _ax(ax), _ay(ay), _az(az) 
+Particule::Particule(Vector3D pos,
+                     Vector3D vel,
+                     Vector3D force, 
+                     float masse)
+    : _pos(pos), 
+      _vel(vel), 
+      _force(force) 
 {
     setMasse(masse);
 }
 
-double Particule::getX() const { return _px; }
-double Particule::getY() const { return _py; }
-double Particule::getZ() const { return _pz; }
-
-double Particule::getVx() const { return _vx; }
-double Particule::getVy() const { return _vy; }
-double Particule::getVz() const { return _vz; }
-
-double Particule::getAx() const { return _ax; }
-double Particule::getAy() const { return _ay; }
-double Particule::getAz() const { return _az; }
-
-double Particule::getInverseMasse() const { return _inverseMasse; }
-
-void Particule::setPosition(double px, double py, double pz) {
-    _px = px;
-    _py = py;
-    _pz = pz;
+Vector3D Particule::getPos() const {
+    return _pos;
 }
 
-void Particule::setVitesse(double vx, double vy, double vz) {
-    _vx = vx;
-    _vy = vy;
-    _vz = vz;
+Vector3D Particule::getVx() const {
+    return _vel;
 }
 
-void Particule::setAcceleration(double ax, double ay, double az) {
-    _ax = ax;
-    _ay = ay;
-    _az = az;
+Vector3D Particule::getForce() const {
+    return _force;
 }
 
-void Particule::setMasse(double masse) {
-    if (masse <= 0.0) {
+float Particule::getInverseMasse() const {
+    return _inverseMasse;
+}
+
+void Particule::setPosition(float px, float py, float pz) {
+    _pos = Vector3D(px, py, pz);
+}
+
+void Particule::setPosition(Vector3D pos) {
+    _pos = pos;
+}
+
+void Particule::setVitesse(float vx, float vy, float vz) {
+    _vel = Vector3D(vx, vy, vz);
+}
+
+void Particule::setVitesse(Vector3D vel) {
+    _vel = vel;
+}
+
+void Particule::setForce(float ax, float ay, float az) {
+    _force = Vector3D(ax, ay, az);
+}
+
+void Particule::setForce(Vector3D force) {
+    _force = force;
+}
+
+void Particule::setMasse(float masse) {
+    if (masse <= 0.0f) {
         _inverseMasse = 0.0;
     } else {
         _inverseMasse = 1.0 / masse;

@@ -1,49 +1,42 @@
 #ifndef PARTICULE_H
 #define PARTICULE_H
 
+#include "3DVector.h"
+
 class Particule {
 private:
-    double _px;
-    double _py;
-    double _pz;
+    Vector3D _pos;
 
-    double _vx;
-    double _vy;
-    double _vz;
+    Vector3D _vel;
 
-    double _ax;
-    double _ay;
-    double _az;
+    Vector3D _force;
 
-    double _inverseMasse;
+    float _inverseMasse;
 
 public:
-    Particule(double px = 0.0, double py = 0.0, double pz = 0.0,
-              double vx = 0.0, double vy = 0.0, double vz = 0.0,
-              double ax = 0.0, double ay = 0.0, double az = 0.0,
-              double masse = 1.0);
+    Particule(Vector3D pos,
+              Vector3D vel,
+              Vector3D force, 
+              float masse = 1.0);
 
-    double getX() const;
-    double getY() const;
-    double getZ() const;
+    Vector3D getPos() const;
 
-    double getVx() const;
-    double getVy() const;
-    double getVz() const;
+    Vector3D getVx() const;
 
-    double getAx() const;
-    double getAy() const;
-    double getAz() const;
+    Vector3D getForce() const;
 
-    double getInverseMasse() const;
+    float getInverseMasse() const;
 
-    void setPosition(double px, double py, double pz);
+    void setPosition(float px, float py, float pz);
+    void setPosition(Vector3D pos);
 
-    void setVitesse(double vx, double vy, double vz);
+    void setVitesse(float vx, float vy, float vz);
+    void setVitesse(Vector3D vel);
 
-    void setAcceleration(double ax, double ay, double az);
+    void setForce(float ax, float ay, float az);
+    void setForce(Vector3D force);
 
-    void setMasse(double masse);
+    void setMasse(float masse);
 };
 
 #endif 
