@@ -81,3 +81,6 @@ MoteurPhysique/*.tmp
 MoteurPhysique/*.cache
 MoteurPhysique/.DS_Store
 MoteurPhysique/Thumbs.db
+
+MoteurPhysique/icon.rc
+.idea/
