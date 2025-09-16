@@ -41,43 +41,43 @@
 *.dwo
 ____________________________________________________________________________
 # -- Binaires générés --
-/bin/*.exe
-/bin/*.dll
-/bin/*.app
-/bin/*.o
-/bin/*.so
-/bin/*.dylib
+MoteurPhysique/bin/*.exe
+MoteurPhysique/bin/*.dll
+MoteurPhysique/bin/*.app
+MoteurPhysique/bin/*.o
+MoteurPhysique/bin/*.so
+MoteurPhysique/bin/*.dylib
 
 # -- Dossier de build (Visual Studio, Xcode, Makefile, etc.) --
-/obj/
-/build/
-/Release/
-/Debug/
-/DerivedData/
+MoteurPhysique/obj/
+MoteurPhysique/build/
+MoteurPhysique/Release/
+MoteurPhysique/Debug/
+MoteurPhysique/DerivedData/
 
 # -- Fichiers de projet générés par les IDE --
 # Visual Studio
-*.sln
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
+MoteurPhysique/*.sln
+MoteurPhysique/*.vcxproj
+MoteurPhysique/*.vcxproj.filters
+MoteurPhysique/*.vcxproj.user
 
 # Xcode
-*.xcodeproj
-*.xcworkspace
-*.xcuserdata/
-*.xcsettings
+MoteurPhysique/*.xcodeproj
+MoteurPhysique/*.xcworkspace
+MoteurPhysique/*.xcuserdata/
+MoteurPhysique/*.xcsettings
 
 # CLion / Rider
-.idea/
-cmake-build-*/
+MoteurPhysique/.idea/
+MoteurPhysique/cmake-build-*/
 
 # VSCode
-.vscode/
+MoteurPhysique/.vscode/
 
 # -- Autres fichiers temporaires --
-*.log
-*.tmp
-*.cache
-.DS_Store
-Thumbs.db
+MoteurPhysique/*.log
+MoteurPhysique/*.tmp
+MoteurPhysique/*.cache
+MoteurPhysique/.DS_Store
+MoteurPhysique/Thumbs.db
