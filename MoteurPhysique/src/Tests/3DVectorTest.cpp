@@ -24,7 +24,7 @@ void Vector3DTest::TestSubtraction() {
 
 void Vector3DTest::TestScalarProduct() {
 	Vector3D v1(1, 2, 3);
-	Vector3D v2 = v1 * 2;
+	Vector3D v2 = v1.scalar(2);
 	assert(v2.x == 2);
 	assert(v2.y == 4);
 	assert(v2.z == 6);
