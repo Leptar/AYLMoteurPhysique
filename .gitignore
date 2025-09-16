@@ -39,3 +39,45 @@
 
 # debug information files
 *.dwo
+____________________________________________________________________________
+# -- Binaires générés --
+/bin/*.exe
+/bin/*.dll
+/bin/*.app
+/bin/*.o
+/bin/*.so
+/bin/*.dylib
+
+# -- Dossier de build (Visual Studio, Xcode, Makefile, etc.) --
+/obj/
+/build/
+/Release/
+/Debug/
+/DerivedData/
+
+# -- Fichiers de projet générés par les IDE --
+# Visual Studio
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+*.xcuserdata/
+*.xcsettings
+
+# CLion / Rider
+.idea/
+cmake-build-*/
+
+# VSCode
+.vscode/
+
+# -- Autres fichiers temporaires --
+*.log
+*.tmp
+*.cache
+.DS_Store
+Thumbs.db
