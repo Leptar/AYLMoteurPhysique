@@ -24,4 +24,6 @@ class ofApp : public ofBaseApp{
 	private:
 		std::vector<Projectile> projectiles;
 		std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+
+		uint64_t lastTime = 0;
 };

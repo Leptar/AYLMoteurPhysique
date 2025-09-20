@@ -4,21 +4,30 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	projectileConfigs[ProjectileType::Balle] =
-		{.masse = 1.0f, .vitesseInitiale = {200, -400, 0}, .couleur = ofColor::blue };
-	
+	{ .masse = 0.02f,  // 20 g (balle d'airsoft)
+	  .vitesseInitiale = {500, -866, 0}, 
+	  .couleur = ofColor::blue };
+
 	projectileConfigs[ProjectileType::Boulet] =
-		{.masse = 10.0f, .vitesseInitiale = {100, -300, 0}, .couleur = ofColor::gray };
-	
+	{ .masse = 5.0f,   // 5 kg
+	  .vitesseInitiale = {400, -692, 0}, // lourd, donc plus lent
+	  .couleur = ofColor::gray };
+
 	projectileConfigs[ProjectileType::Laser] =
-		{.masse = 0.1f, .vitesseInitiale = {800, -100, 0}, .couleur = ofColor::green };
-	
+	{ .masse = 0.0001f, // quasi nul
+	  .vitesseInitiale = {3000, -5186, 0},  // constant, pas affecté visuellement par gravité
+	  .couleur = ofColor::green };
+
 	projectileConfigs[ProjectileType::BouleDeFeu] =
-		{.masse = 3.0f, .vitesseInitiale = {150, -350, 0}, .couleur = ofColor::red };
+	{ .masse = 1.0f,   // 1 kg (masse symbolique)
+	  .vitesseInitiale = {200, -346, 0}, // lent mais chute plus vite
+	  .couleur = ofColor::red };
+
+	lastTime = ofGetElapsedTimeMillis();
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	static uint64_t lastTime = ofGetElapsedTimeMillis();
 	uint64_t currentTime = ofGetElapsedTimeMillis();
 	float dt = (currentTime - lastTime) / 1000.0f; // en secondes
 	lastTime = currentTime;

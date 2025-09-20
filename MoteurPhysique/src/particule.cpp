@@ -69,14 +69,14 @@ void Particule::setForce(Vector3D force) {
 
 void Particule::setMasse(float masse) {
     if (masse <= 0.0f) {
-        _inverseMasse = 0.0;
+        _inverseMasse = 0.0f;
     } else {
         _inverseMasse = 1.0f / masse;
     }
 }
 
-void Particule::integrerVerlet(float dt) {
-    if (_inverseMasse <= 0.0) return; 
+/*void Particule::integrerVerlet(float dt) {
+    if (_inverseMasse <= 0.0f) return; 
 
     const float damping = 0.7f; 
     Vector3D acc = _force.scalar(_inverseMasse);
@@ -84,6 +84,18 @@ void Particule::integrerVerlet(float dt) {
 
     _oldPos = _pos;
     _pos = newPos;
-
     _vel = _vel.scalar(damping) + acc.scalar(dt);  
+}*/
+
+void Particule::integrerVerlet(float dt) {
+    if (_inverseMasse <= 0.0f) return;
+
+    const float damping = 0.99f; // proche de 1.0 pour pas tuer la dynamique
+    Vector3D acc = _force.scalar(_inverseMasse);
+
+    Vector3D temp = _pos;
+    _pos = _pos + (_pos - _oldPos).scalar(damping) + acc.scalar(dt * dt);
+    _oldPos = temp;
+
+    _vel = (_pos - _oldPos).scalar(1.f/dt); // vitesse dérivée des positions
 }
