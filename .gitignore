@@ -39,3 +39,49 @@
 
 # debug information files
 *.dwo
+____________________________________________________________________________
+# -- Binaires générés --
+MoteurPhysique/bin/*.exe
+MoteurPhysique/bin/*.dll
+MoteurPhysique/bin/*.app
+MoteurPhysique/bin/*.o
+MoteurPhysique/bin/*.so
+MoteurPhysique/bin/*.dylib
+
+# -- Dossier de build (Visual Studio, Xcode, Makefile, etc.) --
+MoteurPhysique/obj/
+MoteurPhysique/build/
+MoteurPhysique/Release/
+MoteurPhysique/Debug/
+MoteurPhysique/DerivedData/
+
+# -- Fichiers de projet générés par les IDE --
+# Visual Studio
+MoteurPhysique/*.sln
+MoteurPhysique/*.vcxproj
+MoteurPhysique/*.vcxproj.filters
+MoteurPhysique/*.vcxproj.user
+
+# Xcode
+MoteurPhysique/*.xcodeproj
+MoteurPhysique/*.xcworkspace
+MoteurPhysique/*.xcuserdata/
+MoteurPhysique/*.xcsettings
+
+# CLion / Rider
+MoteurPhysique/.idea/
+MoteurPhysique/cmake-build-*/
+
+# VSCode
+MoteurPhysique/.vscode/
+
+# -- Autres fichiers temporaires --
+MoteurPhysique/*.log
+MoteurPhysique/*.tmp
+MoteurPhysique/*.cache
+MoteurPhysique/.DS_Store
+MoteurPhysique/Thumbs.db
+
+MoteurPhysique/obj/*
+MoteurPhysique/icon.rc
+.idea/
