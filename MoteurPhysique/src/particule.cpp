@@ -1,3 +1,6 @@
+#include <utf8/unchecked.h>
+#include "3DVectorTest.h"
+#include "3DVector.h"
 #include "Particule.h"
 
 Particule::Particule(Vector3D pos,
@@ -68,15 +71,14 @@ void Particule::setMasse(float masse) {
     if (masse <= 0.0f) {
         _inverseMasse = 0.0;
     } else {
-        _inverseMasse = 1.0 / masse;
+        _inverseMasse = 1.0f / masse;
     }
 }
 
 void Particule::integrerVerlet(float dt) {
     if (_inverseMasse <= 0.0) return; 
 
-    const float damping = 0.7; 
-
+    const float damping = 0.7f; 
     Vector3D acc = _force.scalar(_inverseMasse);
     Vector3D newPos = _pos.scalar(2.f) - _oldPos + acc.scalar(std::pow(dt,2));
 

@@ -5,7 +5,6 @@
 #include <cmath>
 
 class Particule {
-private:
     Vector3D _oldPos;
 
     Vector3D _pos;

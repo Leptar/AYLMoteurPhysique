@@ -3,17 +3,37 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-
+	projectileConfigs[ProjectileType::Balle] =
+		{.masse = 1.0f, .vitesseInitiale = {200, -400, 0}, .couleur = ofColor::blue };
+	
+	projectileConfigs[ProjectileType::Boulet] =
+		{.masse = 10.0f, .vitesseInitiale = {100, -300, 0}, .couleur = ofColor::gray };
+	
+	projectileConfigs[ProjectileType::Laser] =
+		{.masse = 0.1f, .vitesseInitiale = {800, -100, 0}, .couleur = ofColor::green };
+	
+	projectileConfigs[ProjectileType::BouleDeFeu] =
+		{.masse = 3.0f, .vitesseInitiale = {150, -350, 0}, .couleur = ofColor::red };
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+	static uint64_t lastTime = ofGetElapsedTimeMillis();
+	uint64_t currentTime = ofGetElapsedTimeMillis();
+	float dt = (currentTime - lastTime) / 1000.0f; // en secondes
+	lastTime = currentTime;
 
+	for (auto& p : projectiles) {
+		p.update(dt);
+	}
+	ofDrawBitmapStringHighlight("Delta Time: " + ofToString(dt, 4), 20, 20);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-
+	for (auto& p : projectiles) {
+		p.draw();
+	}
 }
 
 //--------------------------------------------------------------
@@ -61,6 +81,30 @@ void ofApp::keyPressed(int key){
 		} while (choix != 'Q');
 	}
 
+	if (key == '1') {
+		projectiles.emplace_back(
+			ProjectileType::Balle, projectileConfigs[ProjectileType::Balle],
+			Vector3D(0, ofGetHeight(), 0)
+			);
+	}
+	if (key == '2') {
+		projectiles.emplace_back(
+			ProjectileType::Boulet, projectileConfigs[ProjectileType::Boulet],
+			Vector3D(0, ofGetHeight(), 0)
+			);
+	}
+	if (key == '3') {
+		projectiles.emplace_back(
+			ProjectileType::Laser, projectileConfigs[ProjectileType::Laser],
+			Vector3D(0, ofGetHeight(), 0)
+			);
+	}
+	if (key == '4') {
+		projectiles.emplace_back(
+			ProjectileType::BouleDeFeu, projectileConfigs[ProjectileType::BouleDeFeu],
+			Vector3D(0, ofGetHeight(), 0)
+			);
+	}
 }
 
 //--------------------------------------------------------------
