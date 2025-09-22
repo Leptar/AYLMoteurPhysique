@@ -5,6 +5,9 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+        // Helper converting a mass/energy/angle triplet into a launch vector expressed
+        // in screen space. A negative Y component points upwards in the rendering
+        // coordinate system.
         const auto makeVelocityFromEnergy = [](float mass, float energyJoules, float angleDeg) {
                 const float speed = (mass > 0.0f) ? std::sqrt(2.0f * energyJoules / mass) : 0.0f;
                 const float angleRad = ofDegToRad(angleDeg);
@@ -19,6 +22,7 @@ void ofApp::setup(){
         const float masseLaser = 0.0001f;
         const float masseBouleFeu = 1.0f;
 
+        // Configure each projectile with a distinct mass, energy budget and firing angle.
         projectileConfigs[ProjectileType::Balle] =
         { .masse = masseBalle,  // 20 g (balle d'airsoft)
           .vitesseInitiale = makeVelocityFromEnergy(masseBalle, 3844.0f, 32.0f),
@@ -50,6 +54,7 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+        // Integrate projectile motion using the elapsed time since the previous frame.
         uint64_t currentTime = ofGetElapsedTimeMillis();
         float dt = (currentTime - lastTime) / 1000.0f; // en secondes
         lastTime = currentTime;
@@ -62,6 +67,7 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+        // Maintain aspect ratio of existing trajectories when the window is resized.
         const float scaleX = (baseWindowWidth > 0.0f) ? currentWindowWidth / baseWindowWidth : 1.0f;
         const float scaleY = (baseWindowHeight > 0.0f) ? currentWindowHeight / baseWindowHeight : 1.0f;
 
@@ -89,9 +95,12 @@ void ofApp::keyPressed(int key){
                         return;
                 }
 
+                // Projectiles spawn at the baseline height to keep trajectories comparable
+                // even after window resizes.
                 const float spawnY = (baseWindowHeight > 0.0f) ? baseWindowHeight : static_cast<float>(ofGetHeight());
 
                 Vector3D adjustedVelocity = configIt->second.vitesseInitiale;
+                // Apply cursor-driven multipliers to modulate the trajectory at launch.
                 adjustedVelocity.x *= aimHorizontalScale;
                 adjustedVelocity.y *= aimVerticalScale;
 
@@ -222,6 +231,7 @@ void ofApp::updateAimFromCursor(int x, int y) {
                 return;
         }
 
+        // Normalize the cursor position so the center of the window corresponds to (0.5, 0.5).
         cursorNormalizedX = ofClamp(static_cast<float>(x) / width, 0.0f, 1.0f);
         cursorNormalizedY = ofClamp(static_cast<float>(y) / height, 0.0f, 1.0f);
 
@@ -230,6 +240,8 @@ void ofApp::updateAimFromCursor(int x, int y) {
 
 //--------------------------------------------------------------
 void ofApp::recalculateAimScales() {
+        // Translate the normalized cursor offset into launch multipliers while constraining
+        // the resulting values to a reasonable range.
         const float horizontalOffset = (cursorNormalizedX - 0.5f) * 2.0f;
         const float verticalOffset = (0.5f - cursorNormalizedY) * 2.0f;
 
