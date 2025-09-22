@@ -36,4 +36,12 @@ class ofApp : public ofBaseApp{
                 float lastDeltaTime = 0.0f;
 
                 uint64_t lastTime = 0;
+
+                float cursorNormalizedX = 0.5f;
+                float cursorNormalizedY = 0.5f;
+                float aimHorizontalScale = 1.0f;
+                float aimVerticalScale = 1.0f;
+
+                void updateAimFromCursor(int x, int y);
+                void recalculateAimScales();
 };

@@ -44,6 +44,8 @@ void ofApp::setup(){
         currentWindowWidth = baseWindowWidth;
         currentWindowHeight = baseWindowHeight;
         lastTime = ofGetElapsedTimeMillis();
+
+        updateAimFromCursor(ofGetMouseX(), ofGetMouseY());
 }
 
 //--------------------------------------------------------------
@@ -89,9 +91,13 @@ void ofApp::keyPressed(int key){
 
                 const float spawnY = (baseWindowHeight > 0.0f) ? baseWindowHeight : static_cast<float>(ofGetHeight());
 
+                Vector3D adjustedVelocity = configIt->second.vitesseInitiale;
+                adjustedVelocity.x *= aimHorizontalScale;
+                adjustedVelocity.y *= aimVerticalScale;
+
                 projectiles.emplace_back(
                         type,
-                        configIt->second,
+                        ProjectileConfig{ configIt->second.masse, adjustedVelocity, configIt->second.couleur },
                         Vector3D(0, spawnY, 0));
         };
 
@@ -158,17 +164,17 @@ void ofApp::keyReleased(int key){
 
 //--------------------------------------------------------------
 void ofApp::mouseMoved(int x, int y ){
-
+        updateAimFromCursor(x, y);
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+        updateAimFromCursor(x, y);
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+        updateAimFromCursor(x, y);
 }
 
 //--------------------------------------------------------------
@@ -194,6 +200,8 @@ void ofApp::windowResized(int w, int h){
 
         currentWindowWidth = static_cast<float>(w);
         currentWindowHeight = static_cast<float>(h);
+
+        recalculateAimScales();
 }
 
 //--------------------------------------------------------------
@@ -204,4 +212,32 @@ void ofApp::gotMessage(ofMessage msg){
 //--------------------------------------------------------------
 void ofApp::dragEvent(ofDragInfo dragInfo){
 
+}
+
+//--------------------------------------------------------------
+void ofApp::updateAimFromCursor(int x, int y) {
+        const float width = (currentWindowWidth > 0.0f) ? currentWindowWidth : static_cast<float>(ofGetWidth());
+        const float height = (currentWindowHeight > 0.0f) ? currentWindowHeight : static_cast<float>(ofGetHeight());
+        if (width <= 0.0f || height <= 0.0f) {
+                return;
+        }
+
+        cursorNormalizedX = ofClamp(static_cast<float>(x) / width, 0.0f, 1.0f);
+        cursorNormalizedY = ofClamp(static_cast<float>(y) / height, 0.0f, 1.0f);
+
+        recalculateAimScales();
+}
+
+//--------------------------------------------------------------
+void ofApp::recalculateAimScales() {
+        const float horizontalOffset = (cursorNormalizedX - 0.5f) * 2.0f;
+        const float verticalOffset = (0.5f - cursorNormalizedY) * 2.0f;
+
+        const float minHorizontalScale = 0.5f;
+        const float maxHorizontalScale = 1.5f;
+        const float minVerticalScale = 0.5f;
+        const float maxVerticalScale = 1.5f;
+
+        aimHorizontalScale = ofMap(horizontalOffset, -1.0f, 1.0f, minHorizontalScale, maxHorizontalScale, true);
+        aimVerticalScale = ofMap(verticalOffset, -1.0f, 1.0f, minVerticalScale, maxVerticalScale, true);
 }
