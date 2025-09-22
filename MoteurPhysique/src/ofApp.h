@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <vector>
+
 #include "ofMain.h"
 #include "Projectile.h"
 
@@ -21,9 +24,16 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-	private:
-		std::vector<Projectile> projectiles;
-		std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+        private:
+                std::vector<Projectile> projectiles;
+                std::map<ProjectileType, ProjectileConfig> projectileConfigs;
 
-		uint64_t lastTime = 0;
+                float baseWindowWidth = 0.0f;
+                float baseWindowHeight = 0.0f;
+                float currentWindowWidth = 0.0f;
+                float currentWindowHeight = 0.0f;
+
+                float lastDeltaTime = 0.0f;
+
+                uint64_t lastTime = 0;
 };
