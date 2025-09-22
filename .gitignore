@@ -55,13 +55,6 @@ MoteurPhysique/Release/
 MoteurPhysique/Debug/
 MoteurPhysique/DerivedData/
 
-# -- Fichiers de projet générés par les IDE --
-# Visual Studio
-MoteurPhysique/*.sln
-MoteurPhysique/*.vcxproj
-MoteurPhysique/*.vcxproj.filters
-MoteurPhysique/*.vcxproj.user
-
 # Xcode
 MoteurPhysique/*.xcodeproj
 MoteurPhysique/*.xcworkspace
