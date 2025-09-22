@@ -34,11 +34,11 @@ void ofApp::setup(){
 
         projectileConfigs[ProjectileType::BouleDeFeu] =
         { .masse = 1.0f,   // 1 kg (masse symbolique)
-          .vitesseInitiale = {260.f, -220.f, 0.f}, // lente et portée courte
+          .vitesseInitiale = {220.f, -140.f, 0.f}, // lente mais portée plus grande
           .couleur = ofColor::red,
-          .gravityScale = 0.8f,
-          .dragCoefficient = 0.25f,
-          .damping = 0.975f };
+          .gravityScale = 0.35f,
+          .dragCoefficient = 0.08f,
+          .damping = 0.99f };
 
         lastTime = ofGetElapsedTimeMillis();
         accumulator = 0.0f;
