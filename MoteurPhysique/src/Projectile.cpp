@@ -4,12 +4,25 @@
 #include "ofGraphics.h"
 #include "ofVec3f.h"
 
-Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const Vector3D& position)
+Projectile::Projectile(ProjectileType T,
+                       const ProjectileConfig& config,
+                       const Vector3D& position,
+                       float widthScale,
+                       float heightScale)
 {
+    this->widthScale = widthScale;
+    this->heightScale = heightScale;
+
+    Vector3D scaledVelocity(
+        config.vitesseInitiale.x * widthScale,
+        config.vitesseInitiale.y * heightScale,
+        config.vitesseInitiale.z
+    );
+
     particule = new Particule(
         position,
-        config.vitesseInitiale,
-        Vector3D(0, (config.masse)*981.f * config.gravityScale, 0),
+        scaledVelocity,
+        Vector3D(0, (config.masse) * 981.f * config.gravityScale * heightScale, 0),
         config.masse
         );
     type = T;
@@ -17,7 +30,7 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
     this->config = config;
     particule->setDamping(config.damping);
     float dt0 = 1.0f / 60.0f; // ou ton dt initial
-    particule->setOldPosition(position - config.vitesseInitiale.scalar(dt0));
+    particule->setOldPosition(position - scaledVelocity.scalar(dt0));
 
 }
 
@@ -26,7 +39,7 @@ void Projectile::update(float deltaTime)
     float invM = particule->getInverseMasse();
     if (invM > 0.0f) {
         float m = 1.0f / invM;
-        Vector3D totalForce(0.f, 981.f * config.gravityScale * m, 0.f);
+        Vector3D totalForce(0.f, 981.f * config.gravityScale * heightScale * m, 0.f);
 
         if (config.dragCoefficient > 0.0f) {
             Vector3D velocity = particule->getVx();
@@ -58,4 +71,30 @@ void Projectile::draw() const
         ofVertex(p.x, p.y, p.z);
     }
     ofEndShape(false);
+}
+
+void Projectile::rescale(float widthRatio, float heightRatio)
+{
+    widthScale *= widthRatio;
+    heightScale *= heightRatio;
+
+    Vector3D pos = particule->getPos();
+    Vector3D oldPos = particule->getOldPos();
+    Vector3D vel = particule->getVx();
+
+    pos.x *= widthRatio;
+    pos.y *= heightRatio;
+    oldPos.x *= widthRatio;
+    oldPos.y *= heightRatio;
+    vel.x *= widthRatio;
+    vel.y *= heightRatio;
+
+    particule->setPosition(pos);
+    particule->setOldPosition(oldPos);
+    particule->setVitesse(vel);
+
+    for (auto& p : trajectoire) {
+        p.x *= widthRatio;
+        p.y *= heightRatio;
+    }
 }

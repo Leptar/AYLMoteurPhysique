@@ -2,6 +2,7 @@
 #include "3DVector.h"
 #include "ofColor.h"
 #include "Particule.h"
+#include <vector>
 
 class ofVec3f;
 
@@ -25,10 +26,20 @@ public:
     std::vector<ofVec3f> trajectoire;
     ProjectileConfig config;
 
-    Projectile(ProjectileType T, const ProjectileConfig& config, const Vector3D& position);
+    Projectile(ProjectileType T,
+               const ProjectileConfig& config,
+               const Vector3D& position,
+               float widthScale,
+               float heightScale);
 
     void update(float deltaTime);
 
     void draw() const;
+
+    void rescale(float widthRatio, float heightRatio);
+
+private:
+    float widthScale;
+    float heightScale;
     
 };
