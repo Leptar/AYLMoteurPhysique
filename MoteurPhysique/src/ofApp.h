@@ -37,4 +37,5 @@ class ofApp : public ofBaseApp{
 
                 void updateWindowScale(int w, int h);
                 void integratePhysicsStep(float dt);
+                float computeLaunchMultiplier(const ProjectileConfig& config) const;
 };

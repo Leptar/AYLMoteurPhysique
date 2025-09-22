@@ -14,7 +14,9 @@ void ofApp::setup(){
           .couleur = ofColor::blue,
           .gravityScale = 1.0f,
           .dragCoefficient = 0.45f,
-          .damping = 0.985f };
+          .damping = 0.985f,
+          .minLaunchMultiplier = 0.6f,
+          .maxLaunchMultiplier = 1.2f };
 
         projectileConfigs[ProjectileType::Boulet] =
         { .masse = 5.0f,   // 5 kg
@@ -22,7 +24,9 @@ void ofApp::setup(){
           .couleur = ofColor::gray,
           .gravityScale = 1.15f,
           .dragCoefficient = 0.05f,
-          .damping = 0.995f };
+          .damping = 0.995f,
+          .minLaunchMultiplier = 0.7f,
+          .maxLaunchMultiplier = 1.35f };
 
         projectileConfigs[ProjectileType::Laser] =
         { .masse = 0.01f,
@@ -30,7 +34,9 @@ void ofApp::setup(){
           .couleur = ofColor::green,
           .gravityScale = 0.0f,
           .dragCoefficient = 0.0f,
-          .damping = 1.0f };
+          .damping = 1.0f,
+          .minLaunchMultiplier = 0.8f,
+          .maxLaunchMultiplier = 2.0f };
 
         projectileConfigs[ProjectileType::BouleDeFeu] =
         { .masse = 1.0f,   // 1 kg (masse symbolique)
@@ -38,7 +44,9 @@ void ofApp::setup(){
           .couleur = ofColor::red,
           .gravityScale = 0.35f,
           .dragCoefficient = 0.08f,
-          .damping = 0.99f };
+          .damping = 0.99f,
+          .minLaunchMultiplier = 0.5f,
+          .maxLaunchMultiplier = 1.15f };
 
         lastTime = ofGetElapsedTimeMillis();
         accumulator = 0.0f;
@@ -118,31 +126,43 @@ void ofApp::keyPressed(int key){
 	}
 
         if (key == '1') {
+                const ProjectileConfig& config = projectileConfigs[ProjectileType::Balle];
+                float launchMultiplier = computeLaunchMultiplier(config);
                 projectiles.emplace_back(
-                        ProjectileType::Balle, projectileConfigs[ProjectileType::Balle],
+                        ProjectileType::Balle, config,
                         Vector3D(0, ofGetHeight(), 0),
-                        widthScale, heightScale
+                        widthScale, heightScale,
+                        launchMultiplier
                         );
         }
         if (key == '2') {
+                const ProjectileConfig& config = projectileConfigs[ProjectileType::Boulet];
+                float launchMultiplier = computeLaunchMultiplier(config);
                 projectiles.emplace_back(
-                        ProjectileType::Boulet, projectileConfigs[ProjectileType::Boulet],
+                        ProjectileType::Boulet, config,
                         Vector3D(0, ofGetHeight(), 0),
-                        widthScale, heightScale
+                        widthScale, heightScale,
+                        launchMultiplier
                         );
         }
         if (key == '3') {
+                const ProjectileConfig& config = projectileConfigs[ProjectileType::Laser];
+                float launchMultiplier = computeLaunchMultiplier(config);
                 projectiles.emplace_back(
-                        ProjectileType::Laser, projectileConfigs[ProjectileType::Laser],
+                        ProjectileType::Laser, config,
                         Vector3D(0, ofGetHeight(), 0),
-                        widthScale, heightScale
+                        widthScale, heightScale,
+                        launchMultiplier
                         );
         }
         if (key == '4') {
+                const ProjectileConfig& config = projectileConfigs[ProjectileType::BouleDeFeu];
+                float launchMultiplier = computeLaunchMultiplier(config);
                 projectiles.emplace_back(
-                        ProjectileType::BouleDeFeu, projectileConfigs[ProjectileType::BouleDeFeu],
+                        ProjectileType::BouleDeFeu, config,
                         Vector3D(0, ofGetHeight(), 0),
-                        widthScale, heightScale
+                        widthScale, heightScale,
+                        launchMultiplier
                         );
         }
 }
@@ -216,4 +236,14 @@ void ofApp::integratePhysicsStep(float dt){
         for (auto& p : projectiles) {
                 p.update(dt);
         }
+}
+
+float ofApp::computeLaunchMultiplier(const ProjectileConfig& config) const {
+        float windowWidth = static_cast<float>(ofGetWidth());
+        if (windowWidth <= 0.0f) {
+                return config.minLaunchMultiplier;
+        }
+
+        float normalizedX = ofClamp(static_cast<float>(ofGetMouseX()) / windowWidth, 0.0f, 1.0f);
+        return ofLerp(config.minLaunchMultiplier, config.maxLaunchMultiplier, normalizedX);
 }

@@ -8,13 +8,14 @@ Projectile::Projectile(ProjectileType T,
                        const ProjectileConfig& config,
                        const Vector3D& position,
                        float widthScale,
-                       float heightScale)
+                       float heightScale,
+                       float launchPowerMultiplier)
 {
     this->widthScale = widthScale;
     this->heightScale = heightScale;
 
     Vector3D scaledVelocity(
-        config.vitesseInitiale.x * widthScale,
+        config.vitesseInitiale.x * widthScale * launchPowerMultiplier,
         config.vitesseInitiale.y * heightScale,
         config.vitesseInitiale.z
     );

@@ -15,6 +15,8 @@ struct ProjectileConfig {
     float gravityScale;
     float dragCoefficient;
     float damping;
+    float minLaunchMultiplier;
+    float maxLaunchMultiplier;
 };
 
 class Projectile
@@ -30,7 +32,8 @@ public:
                const ProjectileConfig& config,
                const Vector3D& position,
                float widthScale,
-               float heightScale);
+               float heightScale,
+               float launchPowerMultiplier);
 
     void update(float deltaTime);
 
