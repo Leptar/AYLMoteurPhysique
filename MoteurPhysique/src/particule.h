@@ -1,30 +1,51 @@
-#pragma once
+#ifndef PARTICULE_H
+#define PARTICULE_H
+
 #include "3DVector.h"
-#include "ofColor.h"
-#include "Particule.h"
+#include <cmath>
 
-class ofVec3f;
+class Particule {
+    Vector3D _oldPos;
 
-enum class ProjectileType { Balle, Boulet, Laser, BouleDeFeu };
+    Vector3D _pos;
 
-struct ProjectileConfig {
-    float masse;
-    Vector3D vitesseInitiale;
-    ofColor couleur;
-};
+    Vector3D _vel;
 
-class Projectile
-{
+    Vector3D _force;
+
+    float _inverseMasse;
+
 public:
-    Particule* particule;
-    ProjectileType type;
-    ofColor couleur;
-    std::vector<ofVec3f> trajectoire;
-    
-    Projectile(ProjectileType T, const ProjectileConfig& config, const Vector3D& position);
+    Particule(Vector3D pos,
+              Vector3D vel,
+              Vector3D force, 
+              float masse = 1.0);
 
-    void update(float deltaTime);
+    Vector3D getOldPos() const;
 
-    void draw() const;
-    
+    Vector3D getPos() const;
+
+    Vector3D getVx() const;
+
+    Vector3D getForce() const;
+
+    float getInverseMasse() const;
+
+    void setOldPosition(float px, float py, float pz);
+    void setOldPosition(Vector3D pos);
+
+    void setPosition(float px, float py, float pz);
+    void setPosition(Vector3D pos);
+
+    void setVitesse(float vx, float vy, float vz);
+    void setVitesse(Vector3D vel);
+
+    void setForce(float ax, float ay, float az);
+    void setForce(Vector3D force);
+
+    void setMasse(float masse);
+
+    void integrerVerlet(float dt);
 };
+
+#endif 
