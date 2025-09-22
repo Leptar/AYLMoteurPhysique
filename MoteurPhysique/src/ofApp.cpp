@@ -1,27 +1,37 @@
 #include "ofApp.h"
 #include "Tests/3DVectorTest.h"
 
+#include <cmath>
+
 //--------------------------------------------------------------
 void ofApp::setup(){
-	projectileConfigs[ProjectileType::Balle] =
-	{ .masse = 0.02f,  // 20 g (balle d'airsoft)
-	  .vitesseInitiale = {500, -866, 0}, 
-	  .couleur = ofColor::blue };
+        const auto makeVelocity = [](float speed, float angleDeg) {
+                const float angleRad = ofDegToRad(angleDeg);
+                return Vector3D(
+                        speed * std::cos(angleRad),
+                        -speed * std::sin(angleRad),
+                        0.0f);
+        };
 
-	projectileConfigs[ProjectileType::Boulet] =
-	{ .masse = 5.0f,   // 5 kg
-	  .vitesseInitiale = {400, -692, 0}, // lourd, donc plus lent
-	  .couleur = ofColor::gray };
+        projectileConfigs[ProjectileType::Balle] =
+        { .masse = 0.02f,  // 20 g (balle d'airsoft)
+          .vitesseInitiale = makeVelocity(620.0f, 32.0f),
+          .couleur = ofColor::blue };
 
-	projectileConfigs[ProjectileType::Laser] =
-	{ .masse = 0.0001f, // quasi nul
-	  .vitesseInitiale = {3000, -5186, 0},  // constant, pas affecté visuellement par gravité
-	  .couleur = ofColor::green };
+        projectileConfigs[ProjectileType::Boulet] =
+        { .masse = 5.0f,   // 5 kg
+          .vitesseInitiale = makeVelocity(340.0f, 55.0f), // lourd, donc plus lent et tir plus courbe
+          .couleur = ofColor::gray };
 
-	projectileConfigs[ProjectileType::BouleDeFeu] =
-	{ .masse = 1.0f,   // 1 kg (masse symbolique)
-	  .vitesseInitiale = {200, -346, 0}, // lent mais chute plus vite
-	  .couleur = ofColor::red };
+        projectileConfigs[ProjectileType::Laser] =
+        { .masse = 0.0001f, // quasi nul
+          .vitesseInitiale = makeVelocity(2800.0f, 8.0f),  // tir quasi horizontal
+          .couleur = ofColor::green };
+
+        projectileConfigs[ProjectileType::BouleDeFeu] =
+        { .masse = 1.0f,   // 1 kg (masse symbolique)
+          .vitesseInitiale = makeVelocity(460.0f, 70.0f), // trajectoire très arquée
+          .couleur = ofColor::red };
 
 	lastTime = ofGetElapsedTimeMillis();
 }
