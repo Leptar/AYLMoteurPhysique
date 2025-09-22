@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "Projectile.h"
 
 class ofApp : public ofBaseApp{
 
@@ -20,5 +21,9 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-		
+	private:
+		std::vector<Projectile> projectiles;
+		std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+
+		uint64_t lastTime = 0;
 };

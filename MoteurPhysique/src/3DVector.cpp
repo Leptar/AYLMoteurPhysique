@@ -18,8 +18,15 @@ Vector3D::Vector3D(float x, float y, float z) {
     this->z = z;
 }
 
-Vector3D Vector3D::operator*(const float &v) const {
+
+Vector3D Vector3D::scalar(const float &v) const {
     return Vector3D(x * v, y * v, z * v);
+}
+
+float Vector3D::distance(Vector3D& v, Vector3D& t)
+{
+    Vector3D Vdist = v - t;
+    return Vdist.GetNorm();
 }
 
 Vector3D Vector3D::operator+(const Vector3D &v) const {
