@@ -15,6 +15,8 @@ class Particule {
 
     float _inverseMasse;
 
+    float _damping;
+
 public:
     Particule(Vector3D pos,
               Vector3D vel,
@@ -44,6 +46,8 @@ public:
     void setForce(Vector3D force);
 
     void setMasse(float masse);
+
+    void setDamping(float damping);
 
     void integrerVerlet(float dt);
 };

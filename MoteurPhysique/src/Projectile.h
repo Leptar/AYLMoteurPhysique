@@ -11,6 +11,9 @@ struct ProjectileConfig {
     float masse;
     Vector3D vitesseInitiale;
     ofColor couleur;
+    float gravityScale;
+    float dragCoefficient;
+    float damping;
 };
 
 class Projectile
@@ -20,7 +23,8 @@ public:
     ProjectileType type;
     ofColor couleur;
     std::vector<ofVec3f> trajectoire;
-    
+    ProjectileConfig config;
+
     Projectile(ProjectileType T, const ProjectileConfig& config, const Vector3D& position);
 
     void update(float deltaTime);

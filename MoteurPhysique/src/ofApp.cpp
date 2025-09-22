@@ -3,25 +3,37 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	projectileConfigs[ProjectileType::Balle] =
-	{ .masse = 0.02f,  // 20 g (balle d'airsoft)
-	  .vitesseInitiale = {500, -866, 0}, 
-	  .couleur = ofColor::blue };
+        projectileConfigs[ProjectileType::Balle] =
+        { .masse = 0.02f,  // 20 g (balle d'airsoft)
+          .vitesseInitiale = {900.f, -120.f, 0.f}, // trajectoire quasi rectiligne
+          .couleur = ofColor::blue,
+          .gravityScale = 1.0f,
+          .dragCoefficient = 0.45f,
+          .damping = 0.985f };
 
-	projectileConfigs[ProjectileType::Boulet] =
-	{ .masse = 5.0f,   // 5 kg
-	  .vitesseInitiale = {400, -692, 0}, // lourd, donc plus lent
-	  .couleur = ofColor::gray };
+        projectileConfigs[ProjectileType::Boulet] =
+        { .masse = 5.0f,   // 5 kg
+          .vitesseInitiale = {550.f, -900.f, 0.f}, // cloche prononcée
+          .couleur = ofColor::gray,
+          .gravityScale = 1.15f,
+          .dragCoefficient = 0.05f,
+          .damping = 0.995f };
 
-	projectileConfigs[ProjectileType::Laser] =
-	{ .masse = 0.0001f, // quasi nul
-	  .vitesseInitiale = {3000, -5186, 0},  // constant, pas affecté visuellement par gravité
-	  .couleur = ofColor::green };
+        projectileConfigs[ProjectileType::Laser] =
+        { .masse = 0.01f,
+          .vitesseInitiale = {2500.f, 0.f, 0.f},  // trajectoire parfaitement droite
+          .couleur = ofColor::green,
+          .gravityScale = 0.0f,
+          .dragCoefficient = 0.0f,
+          .damping = 1.0f };
 
-	projectileConfigs[ProjectileType::BouleDeFeu] =
-	{ .masse = 1.0f,   // 1 kg (masse symbolique)
-	  .vitesseInitiale = {200, -346, 0}, // lent mais chute plus vite
-	  .couleur = ofColor::red };
+        projectileConfigs[ProjectileType::BouleDeFeu] =
+        { .masse = 1.0f,   // 1 kg (masse symbolique)
+          .vitesseInitiale = {260.f, -220.f, 0.f}, // lente et portée courte
+          .couleur = ofColor::red,
+          .gravityScale = 0.8f,
+          .dragCoefficient = 0.25f,
+          .damping = 0.975f };
 
 	lastTime = ofGetElapsedTimeMillis();
 }
