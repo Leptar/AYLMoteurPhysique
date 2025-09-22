@@ -1,17 +1,18 @@
 #include <utf8/unchecked.h>
 #include "3DVectorTest.h"
 #include "3DVector.h"
-#include "Particule.h"
+#include "particule.h"
 
+/// Initialise la particule avec ses grandeurs cinématiques et dynamiques.
 Particule::Particule(Vector3D pos,
                      Vector3D vel,
-                     Vector3D force, 
+                     Vector3D force,
                      float masse)
-    : _pos(pos), 
-      _vel(vel), 
-      _force(force) 
+    : _pos(pos),
+      _vel(vel),
+      _force(force)
 {
-    _oldPos = _pos - _vel.scalar(0.016f); // 60fps
+    _oldPos = _pos - _vel.scalar(0.016f); // hypothèse d'un rafraîchissement à 60 FPS
     setMasse(masse);
 }
 
@@ -76,21 +77,21 @@ void Particule::setMasse(float masse) {
 }
 
 /*void Particule::integrerVerlet(float dt) {
-    if (_inverseMasse <= 0.0f) return; 
+    if (_inverseMasse <= 0.0f) return;
 
-    const float damping = 0.7f; 
+    const float damping = 0.7f;
     Vector3D acc = _force.scalar(_inverseMasse);
     Vector3D newPos = _pos.scalar(2.f) - _oldPos + acc.scalar(std::pow(dt,2));
 
     _oldPos = _pos;
     _pos = newPos;
-    _vel = _vel.scalar(damping) + acc.scalar(dt);  
+    _vel = _vel.scalar(damping) + acc.scalar(dt);
 }*/
 
 void Particule::integrerVerlet(float dt) {
     if (_inverseMasse <= 0.0f) return;
 
-    const float damping = 0.99f; // proche de 1.0 pour pas tuer la dynamique
+    const float damping = 0.99f; // proche de 1.0 pour conserver l'énergie
     Vector3D acc = _force.scalar(_inverseMasse);
 
     Vector3D temp = _pos;

@@ -4,21 +4,22 @@
 #include "ofGraphics.h"
 #include "ofVec3f.h"
 
+/// Instancie un projectile en initialisant sa particule et sa couleur d'affichage.
 Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const Vector3D& position)
 {
     particule = new Particule(
         position,
         config.vitesseInitiale,
-        Vector3D(0, (config.masse)*981.f, 0),
+        Vector3D(0, (config.masse)*981.f, 0), // force de pesanteur
         config.masse
         );
     type = T;
     couleur = config.couleur;
-    float dt0 = 1.0f / 60.0f; // ou ton dt initial
+    float dt0 = 1.0f / 60.0f; // pas de temps initial supposé
     particule->setOldPosition(position - config.vitesseInitiale.scalar(dt0));
-    
 }
 
+/// Met à jour la physique du projectile et enregistre sa trajectoire.
 void Projectile::update(float deltaTime)
 {
     float invM = particule->getInverseMasse();
@@ -28,13 +29,14 @@ void Projectile::update(float deltaTime)
     } else {
         particule->setForce(Vector3D(0.f, 0.f, 0.f));
     }
-    
+
     particule->integrerVerlet(deltaTime);
     Vector3D pos = particule->getPos();
     trajectoire.emplace_back(pos.x, pos.y, pos.z);
     if (trajectoire.size() > 2000) trajectoire.erase(trajectoire.begin());
 }
 
+/// Dessine le projectile et sa trace.
 void Projectile::draw() const
 {
     Vector3D pos = particule->getPos();
