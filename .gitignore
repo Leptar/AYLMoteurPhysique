@@ -64,6 +64,8 @@ MoteurPhysique/*.xcsettings
 # CLion / Rider
 MoteurPhysique/.idea/
 MoteurPhysique/cmake-build-*/
+MoteurPhysique/*.sln
+MoteurPhysique/*.vcxproj*
 
 # VSCode
 MoteurPhysique/.vscode/
