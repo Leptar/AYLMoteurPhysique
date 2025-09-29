@@ -2,7 +2,6 @@
 #define PARTICULE_H
 
 #include "3DVector.h"
-#include <cmath>
 
 class Particule {
     Vector3D _oldPos;
@@ -47,7 +46,7 @@ public:
 
     void integrerVerlet(Vector3D Force, float dt);
 
-	void integrer(Vector3D, float dt);
+	void integrerEuler(Vector3D, float dt);
 };
 
 #endif
