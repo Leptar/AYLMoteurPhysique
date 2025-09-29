@@ -11,14 +11,14 @@ class Particule {
 
     Vector3D _vel;
 
-    Vector3D _force;
+    Vector3D _acc;
 
     float _inverseMasse;
 
 public:
     Particule(Vector3D pos,
               Vector3D vel,
-              Vector3D force, 
+              Vector3D acc,
               float masse = 1.0);
 
     Vector3D getOldPos() const;
@@ -40,12 +40,14 @@ public:
     void setVitesse(float vx, float vy, float vz);
     void setVitesse(Vector3D vel);
 
-    void setForce(float ax, float ay, float az);
-    void setForce(Vector3D force);
+    void setAcc(float ax, float ay, float az);
+    void setAcc(Vector3D force);
 
     void setMasse(float masse);
 
-    void integrerVerlet(float dt);
+    void integrerVerlet(Vector3D Force, float dt);
+
+	void integrer(Vector3D, float dt);
 };
 
-#endif 
+#endif
