@@ -12,62 +12,6 @@ Particule::Particule(Vector3D pos,
       _force(force) 
 {
     _oldPos = _pos - _vel.scalar(0.016f); // 60fps
-    setMasse(masse);
-}
-
-Vector3D Particule::getOldPos() const {
-    return _oldPos;
-}
-
-Vector3D Particule::getPos() const {
-    return _pos;
-}
-
-Vector3D Particule::getVx() const {
-    return _vel;
-}
-
-Vector3D Particule::getForce() const {
-    return _force;
-}
-
-float Particule::getInverseMasse() const {
-    return _inverseMasse;
-}
-
-void Particule::setOldPosition(float px, float py, float pz) {
-    _oldPos = Vector3D(px, py, pz);
-}
-
-void Particule::setOldPosition(Vector3D oldPos) {
-    _oldPos = oldPos;
-}
-
-void Particule::setPosition(float px, float py, float pz) {
-    _pos = Vector3D(px, py, pz);
-}
-
-void Particule::setPosition(Vector3D pos) {
-    _pos = pos;
-}
-
-void Particule::setVitesse(float vx, float vy, float vz) {
-    _vel = Vector3D(vx, vy, vz);
-}
-
-void Particule::setVitesse(Vector3D vel) {
-    _vel = vel;
-}
-
-void Particule::setForce(float ax, float ay, float az) {
-    _force = Vector3D(ax, ay, az);
-}
-
-void Particule::setForce(Vector3D force) {
-    _force = force;
-}
-
-void Particule::setMasse(float masse) {
     if (masse <= 0.0f) {
         _inverseMasse = 0.0f;
     } else {
