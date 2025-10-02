@@ -60,6 +60,8 @@ MoteurPhysique/*.xcodeproj
 MoteurPhysique/*.xcworkspace
 MoteurPhysique/*.xcuserdata/
 MoteurPhysique/*.xcsettings
+MoteurPhysique/*.sln
+MoteurPhysique/*.vcxproj*
 
 # CLion / Rider
 MoteurPhysique/.idea/

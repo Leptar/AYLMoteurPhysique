@@ -20,33 +20,9 @@ public:
               Vector3D acc,
               float masse = 1.0);
 
-    Vector3D getOldPos() const;
-
-    Vector3D getPos() const;
-
-    Vector3D getVx() const;
-
-    Vector3D getForce() const;
-
-    float getInverseMasse() const;
-
-    void setOldPosition(float px, float py, float pz);
-    void setOldPosition(Vector3D pos);
-
-    void setPosition(float px, float py, float pz);
-    void setPosition(Vector3D pos);
-
-    void setVitesse(float vx, float vy, float vz);
-    void setVitesse(Vector3D vel);
-
-    void setAcc(float ax, float ay, float az);
-    void setAcc(Vector3D force);
-
-    void setMasse(float masse);
-
+    void integrerEuler(Vector3D, float dt);
     void integrerVerlet(Vector3D Force, float dt);
 
-	void integrerEuler(Vector3D, float dt);
 };
 
 #endif
