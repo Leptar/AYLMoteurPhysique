@@ -4,6 +4,7 @@
 #include "3DVector.h"
 
 class Particule {
+public:
     Vector3D _oldPos;
 
     Vector3D _pos;
@@ -13,8 +14,7 @@ class Particule {
     Vector3D _acc;
 
     float _inverseMasse;
-
-public:
+    
     Particule(Vector3D pos,
               Vector3D vel,
               Vector3D acc,
