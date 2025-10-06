@@ -1,11 +1,13 @@
 #include "ofApp.h"
+
+#include "ForceGravity.h"
 #include "Tests/3DVectorTest.h"
 
 //--------------------------------------------------------------
 void ofApp::setup(){
 	projectileConfigs[ProjectileType::Balle] =
 	{ .masse = 0.02f,  // 20 g (balle d'airsoft)
-	  .vitesseInitiale = {500, -866, 0}, 
+	  .vitesseInitiale = {500, -866, 0},
 	  .couleur = ofColor::blue };
 
 	projectileConfigs[ProjectileType::Boulet] =
@@ -23,6 +25,9 @@ void ofApp::setup(){
 	  .vitesseInitiale = {200, -346, 0}, // lent mais chute plus vite
 	  .couleur = ofColor::red };
 
+	registreClass = new ParticuleForceRegistry();
+	Forces[ForceType::Gravity] = new ForceGravity();
+
 	lastTime = ofGetElapsedTimeMillis();
 }
 
@@ -31,6 +36,12 @@ void ofApp::update(){
 	uint64_t currentTime = ofGetElapsedTimeMillis();
 	float dt = (currentTime - lastTime) / 1000.0f; // en secondes
 	lastTime = currentTime;
+
+	for (auto& p : projectiles) {
+		registreClass->add(p.particule, Forces[ForceType::Gravity]);
+	}
+	registreClass->updateForces(dt);
+	registreClass->clear();
 
 	for (auto& p : projectiles) {
 		p.update(dt);

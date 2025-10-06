@@ -9,7 +9,7 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
     particule = new Particule(
         position,
         config.vitesseInitiale,
-        Vector3D(0, config.masse*981.f, 0),
+        Vector3D(0, 0, 0),
         config.masse
         );
     type = T;
@@ -21,8 +21,6 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
 
 void Projectile::update(float deltaTime)
 {
-    float masse  = 1.f/particule->_inverseMasse;
-    Vector3D force = Vector3D(0, masse*981.f, 0);
     particule->integrerVerlet(deltaTime);
     Vector3D pos = particule->_pos;
     trajectoire.emplace_back(pos.x, pos.y, pos.z);

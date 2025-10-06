@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ParticuleForceRegistry.h"
 #include "ofMain.h"
 #include "Projectile.h"
 
@@ -24,6 +25,9 @@ class ofApp : public ofBaseApp{
 	private:
 		std::vector<Projectile> projectiles;
 		std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+
+		ParticuleForceRegistry* registreClass = nullptr;
+		std::map<ForceType, ParticuleForceGenerator*> Forces;
 
 		uint64_t lastTime = 0;
 };

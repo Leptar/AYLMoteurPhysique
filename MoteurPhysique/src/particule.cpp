@@ -28,6 +28,7 @@ void Particule::integrerVerlet(float dt) {
     _oldPos = temp;
 
     _vel = (_pos - _oldPos).scalar(1.f/dt); // vitesse dérivée des positions
+	clearForce();
 }
 
 void Particule::addForce(const Vector3D & Force) {
@@ -35,7 +36,7 @@ void Particule::addForce(const Vector3D & Force) {
 }
 
 void Particule::clearForce() {
-	AccumForce = AccumForce.scalar(0.0f);
+	AccumForce = Vector3D(0, 0, 0);
 }
 
 void Particule::integrerEuler(float dt) {
@@ -44,4 +45,5 @@ void Particule::integrerEuler(float dt) {
 	_vel = _vel + _acc.scalar(dt);
 	_pos = _pos + _vel.scalar(dt);
 
+	clearForce();
 }
