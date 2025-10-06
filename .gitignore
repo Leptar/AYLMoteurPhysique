@@ -47,6 +47,7 @@ MoteurPhysique/bin/*.app
 MoteurPhysique/bin/*.o
 MoteurPhysique/bin/*.so
 MoteurPhysique/bin/*.dylib
+MoteurPhysique/bin/*.exp
 
 # -- Dossier de build (Visual Studio, Xcode, Makefile, etc.) --
 MoteurPhysique/obj/
@@ -62,6 +63,7 @@ MoteurPhysique/*.xcuserdata/
 MoteurPhysique/*.xcsettings
 MoteurPhysique/*.sln
 MoteurPhysique/*.vcxproj*
+
 
 # CLion / Rider
 MoteurPhysique/.idea/
