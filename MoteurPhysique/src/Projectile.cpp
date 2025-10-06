@@ -23,7 +23,7 @@ void Projectile::update(float deltaTime)
 {
     float masse  = 1.f/particule->_inverseMasse;
     Vector3D force = Vector3D(0, masse*981.f, 0);
-    particule->integrerVerlet(force, deltaTime);
+    particule->integrerVerlet(deltaTime);
     Vector3D pos = particule->_pos;
     trajectoire.emplace_back(pos.x, pos.y, pos.z);
     if (trajectoire.size() > 2000) trajectoire.erase(trajectoire.begin());

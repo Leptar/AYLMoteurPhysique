@@ -5,24 +5,20 @@
 
 class Particule {
 public:
-    Vector3D _oldPos;
-
-    Vector3D _pos;
-
-    Vector3D _vel;
-
-    Vector3D _acc;
+    Vector3D _oldPos,_pos, _vel, _acc, AccumForce;
 
     float _inverseMasse;
-    
+
     Particule(Vector3D pos,
               Vector3D vel,
               Vector3D acc,
               float masse = 1.0);
 
-    void integrerEuler(Vector3D, float dt);
-    void integrerVerlet(Vector3D Force, float dt);
+    void integrerEuler(float dt);
+    void integrerVerlet(float dt);
 
+	void addForce(const Vector3D& Force);
+	void clearForce();
 };
 
 #endif
