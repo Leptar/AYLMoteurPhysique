@@ -21,7 +21,7 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
 
 void Projectile::update(float deltaTime)
 {
-    particule->integrerVerlet(deltaTime);
+    particule->integrerEuler(deltaTime);
     Vector3D pos = particule->_pos;
     trajectoire.emplace_back(pos.x, pos.y, pos.z);
     if (trajectoire.size() > 2000) trajectoire.erase(trajectoire.begin());

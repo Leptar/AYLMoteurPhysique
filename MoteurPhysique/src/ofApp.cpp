@@ -1,5 +1,6 @@
 #include "ofApp.h"
 
+#include "ForceFriction.h"
 #include "ForceGravity.h"
 #include "Tests/3DVectorTest.h"
 
@@ -27,6 +28,7 @@ void ofApp::setup(){
 
 	registreClass = new ParticuleForceRegistry();
 	Forces[ForceType::Gravity] = new ForceGravity();
+	Forces[ForceType::Friction] = new ForceFriction();
 
 	lastTime = ofGetElapsedTimeMillis();
 }
@@ -39,6 +41,7 @@ void ofApp::update(){
 
 	for (auto& p : projectiles) {
 		registreClass->add(p.particule, Forces[ForceType::Gravity]);
+		registreClass->add(p.particule, Forces[ForceType::Friction]);
 	}
 	registreClass->updateForces(dt);
 	registreClass->clear();
