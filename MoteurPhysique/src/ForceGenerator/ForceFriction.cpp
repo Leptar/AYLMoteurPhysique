@@ -5,7 +5,7 @@ ForceFriction::ForceFriction(float linear, float Quadratic) {
 	k2 = Quadratic;
 }
 
-void ForceFriction::UpdateForce(Particule * particule, float dt) {
+void ForceFriction::UpdateForce(Particule* particule, float dt) {
 	/*if (particule->_vel.GetNorm() != 0.f) {
 
 		// direction
@@ -28,6 +28,5 @@ void ForceFriction::UpdateForce(Particule * particule, float dt) {
 	Vector3D force = particule->_vel.normalize().scalar(-drag);
 	particule->addForce(force);
 
-
-
 }
+

@@ -16,7 +16,6 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
     couleur = config.couleur;
     float dt0 = 1.0f / 60.0f; // ou ton dt initial
     particule->_oldPos = position - config.vitesseInitiale.scalar(dt0);
-
 }
 
 void Projectile::update(float deltaTime)
