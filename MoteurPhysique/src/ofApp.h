@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ParticuleForceRegistry.h"
+#include "ForceGenerator/ParticuleForceRegistry.h"
 #include "ofMain.h"
 #include "Projectile.h"
 

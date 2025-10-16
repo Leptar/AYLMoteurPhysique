@@ -1,7 +1,7 @@
 #include "ofApp.h"
 
-#include "ForceFriction.h"
-#include "ForceGravity.h"
+#include "ForceGenerator/ForceFriction.h"
+#include "ForceGenerator/ForceGravity.h"
 #include "Tests/3DVectorTest.h"
 
 //--------------------------------------------------------------
