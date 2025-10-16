@@ -28,7 +28,7 @@ void ofApp::setup(){
 
 	registreClass = new ParticuleForceRegistry();
 	Forces[ForceType::Gravity] = new ForceGravity();
-	Forces[ForceType::Friction] = new ForceFriction();
+	Forces[ForceType::Friction] = new ForceFriction(0.0f, 0.0f);
 
 	lastTime = ofGetElapsedTimeMillis();
 }
