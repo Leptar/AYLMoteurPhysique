@@ -4,9 +4,9 @@
 class ForceFriction : public ParticuleForceGenerator {
 
 protected:
-	float k1, k2;
+	float k1, k2 = 0.f;
 public:
 
-	ForceFriction(float linear, float Quadratic);
+	ForceFriction();
 	virtual void UpdateForce(Particule* particule, float dt);
 };

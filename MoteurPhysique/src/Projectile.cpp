@@ -10,8 +10,9 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
         position,
         config.vitesseInitiale,
         Vector3D(0, 0, 0),
-        config.masse
-        );
+        config.masse,
+        config.linear,
+        config.quadratic);
     type = T;
     couleur = config.couleur;
     float dt0 = 1.0f / 60.0f; // ou ton dt initial

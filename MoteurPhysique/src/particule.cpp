@@ -4,10 +4,14 @@
 Particule::Particule(Vector3D pos,
                      Vector3D vel,
                      Vector3D force,
-                     float masse)
+                     float masse,
+                     float linear,
+                     float quadratic)
     : _pos(pos),
       _vel(vel),
-      _acc(force)
+      _acc(force),
+	  linearFriction(linear),
+	  quadraticFriction(quadratic)
 {
     _oldPos = _pos - _vel.scalar(0.016f); // 60fps
     if (masse <= 0.0f) {

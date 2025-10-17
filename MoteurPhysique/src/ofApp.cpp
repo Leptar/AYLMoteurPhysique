@@ -10,29 +10,29 @@ void ofApp::setup(){
 	{ .masse = 0.02f,  // 20 g (balle d'airsoft)
 	  .vitesseInitiale = {500, -866, 0},
 	  .couleur = ofColor::blue,
-	  .linear = 0.05f, .quadratic = 0.01f};
+		.linear = 0.05f, .quadratic = 0.01f,};
 
 	projectileConfigs[ProjectileType::Boulet] =
 	{ .masse = 5.0f,   // 5 kg
 	  .vitesseInitiale = {400, -692, 0}, // lourd, donc plus lent
 	  .couleur = ofColor::gray,
-	  .linear = 0.005f, .quadratic = 0.0005f};
+	 .linear = 0.f, .quadratic = 0.f,};
 
 	projectileConfigs[ProjectileType::Laser] =
 	{ .masse = 0.0001f, // quasi nul
 	  .vitesseInitiale = {3000, -5186, 0},  // constant, pas affecté visuellement par gravité
 	  .couleur = ofColor::green,
-	  .linear = 0.f, .quadratic = 0.f};
+		.linear = 0.f, .quadratic = 0.f,};
 
 	projectileConfigs[ProjectileType::BouleDeFeu] =
 	{ .masse = 1.0f,   // 1 kg (masse symbolique)
 	  .vitesseInitiale = {200, -346, 0}, // lent mais chute plus vite
 	  .couleur = ofColor::red,
-	  .linear = 0.02f, .quadratic = 0.005f};
+	.linear = 0.02f, .quadratic = 0.005f,};
 
 	registreClass = new ParticuleForceRegistry();
 	Forces[ForceType::Gravity] = new ForceGravity();
-	Forces[ForceType::Friction] = new ForceFriction(0.0f, 0.0f);
+	Forces[ForceType::Friction] = new ForceFriction();
 
 	lastTime = ofGetElapsedTimeMillis();
 }

@@ -11,6 +11,7 @@ struct ProjectileConfig {
     float masse;
     Vector3D vitesseInitiale;
     ofColor couleur;
+	float linear, quadratic;
 };
 
 class Projectile
