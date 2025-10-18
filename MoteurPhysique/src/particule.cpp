@@ -6,12 +6,14 @@ Particule::Particule(Vector3D pos,
                      Vector3D force,
                      float masse,
                      float linear,
-                     float quadratic)
+                     float quadratic,
+                     float rayonCollision)
     : _pos(pos),
       _vel(vel),
       _acc(force),
 	  linearFriction(linear),
-	  quadraticFriction(quadratic)
+	  quadraticFriction(quadratic),
+      rayonCollision(rayonCollision)
 {
     _oldPos = _pos - _vel.scalar(0.016f); // 60fps
     if (masse <= 0.0f) {

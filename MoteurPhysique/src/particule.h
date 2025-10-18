@@ -7,14 +7,15 @@ class Particule {
 public:
     Vector3D _oldPos,_pos, _vel, _acc, AccumForce;
 
-    float _inverseMasse, linearFriction, quadraticFriction;
+    float _inverseMasse, linearFriction, quadraticFriction, rayonCollision;
 
     Particule(Vector3D pos,
               Vector3D vel,
               Vector3D acc,
               float masse = 1.0,
               float linear = 0.0f,
-              float quadratic = 0.0f);
+              float quadratic = 0.0f,
+              float rayonCollision = 0.0f);
 
     void integrerEuler(float dt);
     void integrerVerlet(float dt);
