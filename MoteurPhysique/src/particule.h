@@ -7,7 +7,7 @@ class Particule {
 public:
     Vector3D _oldPos,_pos, _vel, _acc, AccumForce;
 
-    float _inverseMasse, linearFriction, quadraticFriction, rayonCollision;
+    float masse ,_inverseMasse, linearFriction, quadraticFriction, rayonCollision;
 
     Particule(Vector3D pos,
               Vector3D vel,

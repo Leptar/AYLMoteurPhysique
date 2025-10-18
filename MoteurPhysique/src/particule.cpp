@@ -11,6 +11,7 @@ Particule::Particule(Vector3D pos,
     : _pos(pos),
       _vel(vel),
       _acc(force),
+      masse(masse),
 	  linearFriction(linear),
 	  quadraticFriction(quadratic),
       rayonCollision(rayonCollision)
