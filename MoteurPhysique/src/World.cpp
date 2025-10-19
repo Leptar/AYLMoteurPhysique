@@ -5,7 +5,7 @@
 
 void World::setup(const ofRectangle& bounds) {
     worldBounds = bounds;
-    blob.setup(Vector3D(bounds.getCenter().x, bounds.getCenter().y, 0.0f), bounds.getWidth() * 0.12f, 12);
+    blob.setup(Vector3D(bounds.getCenter().x, bounds.getCenter().y, 0.0f), bounds.getWidth() * 0.085f, 12);
     blob.setBounds(worldBounds);
     blob.setObstacles(obstacles);
     controlAcceleration = Vector3D(0, 0, 0);
@@ -22,8 +22,15 @@ void World::update(float dt) {
 void World::draw() const {
     ofPushStyle();
     ofSetColor(80, 120, 200, 180);
-    for (const ofRectangle& cube : obstacles) {
-        ofDrawRectangle(cube);
+    for (const Blob::Obstacle& obstacle : obstacles) {
+        switch (obstacle.type) {
+        case Blob::Obstacle::Type::Rectangle:
+            ofDrawRectangle(obstacle.rect);
+            break;
+        case Blob::Obstacle::Type::Circle:
+            ofDrawCircle(obstacle.center.x, obstacle.center.y, obstacle.radius);
+            break;
+        }
     }
     ofPopStyle();
 
@@ -34,8 +41,8 @@ void World::setControlAcceleration(const Vector3D& acceleration) {
     controlAcceleration = acceleration;
 }
 
-void World::setObstacles(const std::vector<ofRectangle>& cubes) {
-    obstacles = cubes;
+void World::setObstacles(const std::vector<Blob::Obstacle>& shapes) {
+    obstacles = shapes;
     blob.setObstacles(obstacles);
 }
 

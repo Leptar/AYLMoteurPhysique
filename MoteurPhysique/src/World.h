@@ -15,7 +15,7 @@ public:
     void splitBlob();
     void mergeBlob();
 
-    void setObstacles(const std::vector<ofRectangle>& cubes);
+    void setObstacles(const std::vector<Blob::Obstacle>& shapes);
 
     std::size_t getAttachedCount() const;
 
@@ -23,5 +23,5 @@ private:
     Blob blob;
     Vector3D controlAcceleration;
     ofRectangle worldBounds;
-    std::vector<ofRectangle> obstacles;
+    std::vector<Blob::Obstacle> obstacles;
 };

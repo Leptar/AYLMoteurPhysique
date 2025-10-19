@@ -12,9 +12,33 @@ class Blob {
 public:
     Blob();
 
+    struct Obstacle {
+        enum class Type { Rectangle, Circle };
+
+        static Obstacle makeRectangle(const ofRectangle& rectShape) {
+            Obstacle obstacle;
+            obstacle.type = Type::Rectangle;
+            obstacle.rect = rectShape;
+            return obstacle;
+        }
+
+        static Obstacle makeCircle(const Vector3D& centerPoint, float radiusValue) {
+            Obstacle obstacle;
+            obstacle.type = Type::Circle;
+            obstacle.center = centerPoint;
+            obstacle.radius = radiusValue;
+            return obstacle;
+        }
+
+        Type type = Type::Rectangle;
+        ofRectangle rect;
+        Vector3D center;
+        float radius = 0.0f;
+    };
+
     void setup(const Vector3D& center, float radius, std::size_t outerCount);
     void setBounds(const ofRectangle& worldBounds);
-    void setObstacles(const std::vector<ofRectangle>& cubes);
+    void setObstacles(const std::vector<Obstacle>& shapes);
     void setControlAcceleration(const Vector3D& acceleration);
 
     void update(float dt);
@@ -57,7 +81,7 @@ private:
 
     Vector3D controlAcceleration;
     ofRectangle bounds;
-    std::vector<ofRectangle> obstacles;
+    std::vector<Obstacle> obstacles;
 
     float particleRadius = 12.0f;
     bool splitActive = false;

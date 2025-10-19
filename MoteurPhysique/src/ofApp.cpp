@@ -319,13 +319,22 @@ void ofApp::rebuildBlobObstacles(int width, int height) {
                 return;
         }
 
-        float baseSize = std::min(width, height) * 0.15f;
-        float mediumSize = baseSize * 0.8f;
-        float largeSize = baseSize * 1.1f;
+        float minAxis = std::min(width, height);
+        float tallWidth = minAxis * 0.08f;
+        float tallHeight = minAxis * 0.26f;
+        float wideWidth = minAxis * 0.22f;
+        float wideHeight = minAxis * 0.07f;
+        float circleRadius = minAxis * 0.07f;
+        float smallCircle = circleRadius * 0.65f;
 
-        blobObstacles.emplace_back(width * 0.25f - baseSize * 0.5f, height * 0.65f - baseSize * 0.5f, baseSize, baseSize);
-        blobObstacles.emplace_back(width * 0.5f - mediumSize * 0.5f, height * 0.45f - mediumSize * 0.5f, mediumSize, mediumSize);
-        blobObstacles.emplace_back(width * 0.72f - largeSize * 0.5f, height * 0.7f - largeSize * 0.5f, largeSize, largeSize);
+        blobObstacles.push_back(Blob::Obstacle::makeRectangle(
+                ofRectangle(width * 0.22f - tallWidth * 0.5f, height * 0.62f - tallHeight * 0.5f, tallWidth, tallHeight)));
+        blobObstacles.push_back(Blob::Obstacle::makeRectangle(
+                ofRectangle(width * 0.58f - wideWidth * 0.5f, height * 0.42f - wideHeight * 0.5f, wideWidth, wideHeight)));
+        blobObstacles.push_back(Blob::Obstacle::makeCircle(
+                Vector3D(width * 0.35f, height * 0.32f, 0.0f), circleRadius));
+        blobObstacles.push_back(Blob::Obstacle::makeCircle(
+                Vector3D(width * 0.75f, height * 0.68f, 0.0f), smallCircle));
 
         world.setObstacles(blobObstacles);
 }

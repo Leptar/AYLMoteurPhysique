@@ -23,7 +23,7 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     rightHalf.clear();
     cachedAttachedCount = 0;
     splitActive = false;
-    particleRadius = radius * 0.2f;
+    particleRadius = radius * 0.12f;
 
     if (outerCount < 4) {
         outerCount = 4;
@@ -98,8 +98,8 @@ void Blob::setBounds(const ofRectangle& worldBounds) {
     bounds = worldBounds;
 }
 
-void Blob::setObstacles(const std::vector<ofRectangle>& cubes) {
-    obstacles = cubes;
+void Blob::setObstacles(const std::vector<Obstacle>& shapes) {
+    obstacles = shapes;
 }
 
 void Blob::setControlAcceleration(const Vector3D& acceleration) {
@@ -339,40 +339,68 @@ void Blob::applyObstacles(float dt) {
         Vector3D velocity = particle->_vel;
         bool collided = false;
 
-        for (const ofRectangle& obstacle : obstacles) {
-            float expandedLeft = obstacle.getMinX() - particleRadius;
-            float expandedRight = obstacle.getMaxX() + particleRadius;
-            float expandedTop = obstacle.getMinY() - particleRadius;
-            float expandedBottom = obstacle.getMaxY() + particleRadius;
+        for (const Obstacle& obstacle : obstacles) {
+            if (obstacle.type == Obstacle::Type::Rectangle) {
+                float expandedLeft = obstacle.rect.getMinX() - particleRadius;
+                float expandedRight = obstacle.rect.getMaxX() + particleRadius;
+                float expandedTop = obstacle.rect.getMinY() - particleRadius;
+                float expandedBottom = obstacle.rect.getMaxY() + particleRadius;
 
-            if (particle->_pos.x <= expandedLeft || particle->_pos.x >= expandedRight ||
-                particle->_pos.y <= expandedTop || particle->_pos.y >= expandedBottom) {
-                continue;
-            }
+                if (particle->_pos.x <= expandedLeft || particle->_pos.x >= expandedRight ||
+                    particle->_pos.y <= expandedTop || particle->_pos.y >= expandedBottom) {
+                    continue;
+                }
 
-            float leftPenetration = particle->_pos.x - expandedLeft;
-            float rightPenetration = expandedRight - particle->_pos.x;
-            float topPenetration = particle->_pos.y - expandedTop;
-            float bottomPenetration = expandedBottom - particle->_pos.y;
+                float leftPenetration = particle->_pos.x - expandedLeft;
+                float rightPenetration = expandedRight - particle->_pos.x;
+                float topPenetration = particle->_pos.y - expandedTop;
+                float bottomPenetration = expandedBottom - particle->_pos.y;
 
-            float minPenetration = std::min(std::min(leftPenetration, rightPenetration),
-                                             std::min(topPenetration, bottomPenetration));
+                float minPenetration = std::min(std::min(leftPenetration, rightPenetration),
+                                                 std::min(topPenetration, bottomPenetration));
 
-            if (minPenetration == leftPenetration) {
-                particle->_pos.x = expandedLeft;
-                velocity.x *= -bounce;
-            } else if (minPenetration == rightPenetration) {
-                particle->_pos.x = expandedRight;
-                velocity.x *= -bounce;
-            } else if (minPenetration == topPenetration) {
-                particle->_pos.y = expandedTop;
-                velocity.y *= -bounce;
+                if (minPenetration == leftPenetration) {
+                    particle->_pos.x = expandedLeft;
+                    velocity.x *= -bounce;
+                } else if (minPenetration == rightPenetration) {
+                    particle->_pos.x = expandedRight;
+                    velocity.x *= -bounce;
+                } else if (minPenetration == topPenetration) {
+                    particle->_pos.y = expandedTop;
+                    velocity.y *= -bounce;
+                } else {
+                    particle->_pos.y = expandedBottom;
+                    velocity.y *= -bounce;
+                }
+
+                collided = true;
             } else {
-                particle->_pos.y = expandedBottom;
-                velocity.y *= -bounce;
-            }
+                Vector3D center = obstacle.center;
+                Vector3D offset(particle->_pos.x - center.x, particle->_pos.y - center.y, 0.0f);
+                float distance = offset.GetNorm();
+                float allowed = obstacle.radius + particleRadius;
 
-            collided = true;
+                if (distance >= allowed || allowed <= std::numeric_limits<float>::epsilon()) {
+                    continue;
+                }
+
+                Vector3D normal;
+                if (distance <= std::numeric_limits<float>::epsilon()) {
+                    normal = Vector3D(1.0f, 0.0f, 0.0f);
+                } else {
+                    normal = offset.scalar(1.0f / distance);
+                }
+
+                particle->_pos.x = center.x + normal.x * allowed;
+                particle->_pos.y = center.y + normal.y * allowed;
+
+                float vn = velocity.dot(normal);
+                if (vn < 0.0f) {
+                    velocity = velocity - normal.scalar((1.0f + bounce) * vn);
+                }
+
+                collided = true;
+            }
         }
 
         if (collided) {

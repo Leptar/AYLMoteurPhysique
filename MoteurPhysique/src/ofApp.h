@@ -42,7 +42,7 @@ class ofApp : public ofBaseApp{
                 void toggleLevel();
 
                 World world;
-                std::vector<ofRectangle> blobObstacles;
+                std::vector<Blob::Obstacle> blobObstacles;
                 uint64_t lastTime = 0;
                 bool moveUp = false;
                 bool moveDown = false;
