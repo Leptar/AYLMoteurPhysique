@@ -13,6 +13,8 @@ constexpr float kCoreSpringStiffness = 6.0f;
 constexpr float kOuterSpringStiffness = 3.0f;
 constexpr float kParticleRadius = 16.0f;
 constexpr float kImpulseScale = 22.0f;
+constexpr std::size_t kPeripheralParticleCount = 8;
+constexpr float kTwoPi = 6.28318530717958647692f;
 }
 
 Blob::Blob()
@@ -28,6 +30,7 @@ void Blob::setup(const ofRectangle& bounds)
 
 void Blob::reset(const ofRectangle& bounds)
 {
+    centerParticle = nullptr;
     particles.clear();
     springGenerators.clear();
     springBindings.clear();
@@ -59,11 +62,20 @@ void Blob::buildBlob(const ofRectangle& bounds)
         return particles.back().get();
     };
 
-    Particule* centerParticle = createParticle(center);
-    Particule* topParticle = createParticle(center + Vector3D(0.f, -reach, 0.f));
-    Particule* bottomParticle = createParticle(center + Vector3D(0.f, reach, 0.f));
-    Particule* leftParticle = createParticle(center + Vector3D(-reach, 0.f, 0.f));
-    Particule* rightParticle = createParticle(center + Vector3D(reach, 0.f, 0.f));
+    centerParticle = nullptr;
+    centerParticle = createParticle(center);
+
+    std::vector<Particule*> peripheralParticles;
+    peripheralParticles.reserve(kPeripheralParticleCount);
+
+    if (kPeripheralParticleCount > 0) {
+        float ringRadius = std::max(reach, particleRadius * 3.f);
+        for (std::size_t i = 0; i < kPeripheralParticleCount; ++i) {
+            float angle = (static_cast<float>(i) / static_cast<float>(kPeripheralParticleCount)) * kTwoPi;
+            Vector3D offset(std::cos(angle) * ringRadius, std::sin(angle) * ringRadius, 0.f);
+            peripheralParticles.push_back(createParticle(center + offset));
+        }
+    }
 
     auto connectSpring = [&](Particule* a, Particule* b, float stiffness) {
         if (!a || !b)
@@ -81,15 +93,17 @@ void Blob::buildBlob(const ofRectangle& bounds)
         springGenerators.push_back(std::move(springBA));
     };
 
-    connectSpring(centerParticle, topParticle, kCoreSpringStiffness);
-    connectSpring(centerParticle, bottomParticle, kCoreSpringStiffness);
-    connectSpring(centerParticle, leftParticle, kCoreSpringStiffness);
-    connectSpring(centerParticle, rightParticle, kCoreSpringStiffness);
+    for (Particule* peripheral : peripheralParticles) {
+        connectSpring(centerParticle, peripheral, kCoreSpringStiffness);
+    }
 
-    connectSpring(topParticle, leftParticle, kOuterSpringStiffness);
-    connectSpring(topParticle, rightParticle, kOuterSpringStiffness);
-    connectSpring(bottomParticle, leftParticle, kOuterSpringStiffness);
-    connectSpring(bottomParticle, rightParticle, kOuterSpringStiffness);
+    if (peripheralParticles.size() > 1) {
+        for (std::size_t i = 0; i < peripheralParticles.size(); ++i) {
+            Particule* current = peripheralParticles[i];
+            Particule* next = peripheralParticles[(i + 1) % peripheralParticles.size()];
+            connectSpring(current, next, kOuterSpringStiffness);
+        }
+    }
 
     updatePotentialEnergy();
 }
@@ -241,7 +255,7 @@ std::size_t Blob::activeCollisionCount() const
 
 void Blob::nudge(const Vector3D& impulse, float intensity)
 {
-    if (particles.empty() || intensity <= 0.f)
+    if (particles.empty() || !centerParticle || intensity <= 0.f)
         return;
 
     float magnitude = std::sqrt(impulse.x * impulse.x + impulse.y * impulse.y + impulse.z * impulse.z);
@@ -251,9 +265,7 @@ void Blob::nudge(const Vector3D& impulse, float intensity)
     Vector3D direction = impulse.scalar(1.f / magnitude);
     Vector3D scaledImpulse = direction.scalar(kImpulseScale * intensity);
 
-    for (auto& particle : particles) {
-        particle->_vel = particle->_vel + scaledImpulse;
-    }
+    centerParticle->_vel = centerParticle->_vel + scaledImpulse;
 }
 
 float Blob::totalMass() const

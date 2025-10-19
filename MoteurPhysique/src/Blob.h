@@ -51,6 +51,7 @@ private:
 
     ofRectangle playArea;
     std::vector<std::unique_ptr<Particule>> particles;
+    Particule* centerParticle = nullptr;
     ParticuleForceRegistry registry;
     std::vector<std::unique_ptr<ParticuleForceGenerator>> springGenerators;
     std::vector<SpringBinding> springBindings;
