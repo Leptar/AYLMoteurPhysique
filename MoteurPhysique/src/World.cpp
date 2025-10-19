@@ -8,7 +8,7 @@ void World::setup(const ofRectangle& bounds) {
     blob.setup(Vector3D(bounds.getCenter().x, bounds.getCenter().y, 0.0f), bounds.getWidth() * 0.055f, 12);
     blob.setBounds(worldBounds);
     blob.setObstacles(obstacles);
-    controlAcceleration = Vector3D(0, 0, 0);
+    controlAcceleration = Vector3D::zero();
 }
 
 void World::update(float dt) {
@@ -16,7 +16,7 @@ void World::update(float dt) {
     blob.setObstacles(obstacles);
     blob.setControlAcceleration(controlAcceleration);
     blob.update(dt);
-    controlAcceleration = Vector3D(0, 0, 0);
+    controlAcceleration = Vector3D::zero();
 }
 
 void World::draw() const {

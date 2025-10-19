@@ -2,19 +2,19 @@
 #include "ofApp.h"
 #include "Tests/3DVectorTest.h"
 
-//========================================================================
-int main( ){
+//==========================================================================
+int main() {
+    Vector3DTest tester;
+    tester.RunAllTests();
 
-	Vector3DTest tester;
-	tester.RunAllTests();
-	//Use ofGLFWWindowSettings for more options like multi-monitor fullscreen
-	ofGLWindowSettings settings;
-	settings.setSize(1024, 768);
-	settings.windowMode = OF_WINDOW; //can also be OF_FULLSCREEN
+    // Configuration de la fenêtre principale (peut être basculée en plein écran).
+    ofGLWindowSettings settings;
+    settings.setSize(1024, 768);
+    settings.windowMode = OF_WINDOW;
 
-	auto window = ofCreateWindow(settings);
+    auto window = ofCreateWindow(settings);
 
-	ofRunApp(window, std::make_shared<ofApp>());
-	ofRunMainLoop();
-
+    ofRunApp(window, std::make_shared<ofApp>());
+    ofRunMainLoop();
 }
+

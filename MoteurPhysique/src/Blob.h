@@ -5,9 +5,13 @@
 #include <vector>
 
 #include "3DVector.h"
-#include "particule.h"
+#include "Particule.h"
 #include "ofMain.h"
 
+// ---------------------------------------------------------------------------
+// Blob souple composé de particules reliées par des ressorts. Il peut être
+// séparé en deux moitiés et interagit avec un ensemble d'obstacles.
+// ---------------------------------------------------------------------------
 class Blob {
 public:
     Blob();
@@ -15,20 +19,9 @@ public:
     struct Obstacle {
         enum class Type { Rectangle, Circle };
 
-        static Obstacle makeRectangle(const ofRectangle& rectShape) {
-            Obstacle obstacle;
-            obstacle.type = Type::Rectangle;
-            obstacle.rect = rectShape;
-            return obstacle;
-        }
-
-        static Obstacle makeCircle(const Vector3D& centerPoint, float radiusValue) {
-            Obstacle obstacle;
-            obstacle.type = Type::Circle;
-            obstacle.center = centerPoint;
-            obstacle.radius = radiusValue;
-            return obstacle;
-        }
+        // Fabriques utilitaires pour simplifier la construction côté application.
+        static Obstacle creerRectangle(const ofRectangle& forme);
+        static Obstacle creerCercle(const Vector3D& centre, float rayon);
 
         Type type = Type::Rectangle;
         ofRectangle rect;
@@ -87,3 +80,4 @@ private:
     bool splitActive = false;
     std::size_t rootIndex = 0;
 };
+

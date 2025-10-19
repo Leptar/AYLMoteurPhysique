@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <queue>
 
 namespace {
+// Gravité et paramètres de contrôle du blob.
 constexpr float kGravity = 980.0f;
 constexpr float kAirDrag = 4.5f;
 constexpr float kBoundaryBounce = 0.35f;
@@ -14,6 +16,21 @@ constexpr float kSizeScale = 0.2f;
 }
 
 Blob::Blob() = default;
+
+Blob::Obstacle Blob::Obstacle::creerRectangle(const ofRectangle& forme) {
+    Obstacle obstacle;
+    obstacle.type = Type::Rectangle;
+    obstacle.rect = forme;
+    return obstacle;
+}
+
+Blob::Obstacle Blob::Obstacle::creerCercle(const Vector3D& centre, float rayon) {
+    Obstacle obstacle;
+    obstacle.type = Type::Circle;
+    obstacle.center = centre;
+    obstacle.radius = rayon;
+    return obstacle;
+}
 
 void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     particles.clear();
@@ -39,7 +56,7 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     particleRadius = outerRadius * 0.06f;
 
     // Centre du blob
-    particles.emplace_back(std::make_unique<Particule>(center, Vector3D(0, 0, 0), Vector3D(0, 0, 0), 1.5f));
+    particles.emplace_back(std::make_unique<Particule>(center, Vector3D::zero(), Vector3D::zero(), 1.5f));
     particles.back()->rayonCollision = particleRadius;
     particles.back()->clearForce();
     rootIndex = 0;
@@ -51,7 +68,7 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
         Vector3D pos(center.x + std::cos(angle) * outerRadius,
                      center.y + std::sin(angle) * outerRadius,
                      0.0f);
-        particles.emplace_back(std::make_unique<Particule>(pos, Vector3D(0, 0, 0), Vector3D(0, 0, 0), 1.0f));
+        particles.emplace_back(std::make_unique<Particule>(pos, Vector3D::zero(), Vector3D::zero(), 1.0f));
         particles.back()->rayonCollision = particleRadius;
         particles.back()->clearForce();
 
@@ -132,12 +149,12 @@ void Blob::applyInternalForces(float /*dt*/) {
         }
 
         Vector3D delta = b->_pos - a->_pos;
-        float length = delta.GetNorm();
+        float length = delta.norme();
         if (length <= std::numeric_limits<float>::epsilon()) {
             continue;
         }
 
-        Vector3D direction = delta.scalar(1.0f / length);
+        Vector3D direction = delta / length;
         float targetLength = link.restLength;
         float stiffness = link.stiffness;
 
@@ -147,10 +164,10 @@ void Blob::applyInternalForces(float /*dt*/) {
         }
 
         float stretch = length - targetLength;
-        Vector3D force = direction.scalar(-stiffness * stretch);
+        Vector3D force = direction * (-stiffness * stretch);
 
         a->addForce(force);
-        b->addForce(force.scalar(-1.0f));
+        b->addForce(force * -1.0f);
     }
 }
 
@@ -163,20 +180,20 @@ void Blob::integrate(float dt) {
         }
 
         if (i < lastAttachedMask.size() && lastAttachedMask[i]) {
-            particle->addForce(controlAcceleration.scalar(particle->masse));
+            particle->addForce(controlAcceleration * particle->masse);
         }
 
-        dragForce = particle->_vel.scalar(-kAirDrag);
+        dragForce = particle->_vel * -kAirDrag;
         particle->addForce(dragForce);
 
         particle->integrerVerlet(dt);
 
-        float speed = particle->_vel.GetNorm();
+        float speed = particle->_vel.norme();
         if (speed > kMaxVelocity) {
-            Vector3D normalized = particle->_vel.normalize();
-            Vector3D clamped = normalized.scalar(kMaxVelocity);
+            Vector3D normalized = particle->_vel.normalise();
+            Vector3D clamped = normalized * kMaxVelocity;
             particle->_vel = clamped;
-            particle->_oldPos = particle->_pos - particle->_vel.scalar(dt);
+            particle->_oldPos = particle->_pos - particle->_vel * dt;
         }
     }
 }
@@ -222,7 +239,7 @@ void Blob::applyBounds(float dt) {
 
         if (collided) {
             particle->_vel = velocity;
-            particle->_oldPos = particle->_pos - particle->_vel.scalar(dt);
+            particle->_oldPos = particle->_pos - particle->_vel * dt;
         }
     }
 }
@@ -286,7 +303,7 @@ void Blob::update(float dt) {
     applyObstacles(dt);
     applyBounds(dt);
 
-    controlAcceleration = Vector3D(0, 0, 0);
+    controlAcceleration = Vector3D::zero();
 }
 
 void Blob::draw() const {
@@ -379,7 +396,7 @@ void Blob::applyObstacles(float dt) {
             } else {
                 Vector3D center = obstacle.center;
                 Vector3D offset(particle->_pos.x - center.x, particle->_pos.y - center.y, 0.0f);
-                float distance = offset.GetNorm();
+                float distance = offset.norme();
                 float allowed = obstacle.radius + particleRadius;
 
                 if (distance >= allowed || allowed <= std::numeric_limits<float>::epsilon()) {
@@ -390,15 +407,15 @@ void Blob::applyObstacles(float dt) {
                 if (distance <= std::numeric_limits<float>::epsilon()) {
                     normal = Vector3D(1.0f, 0.0f, 0.0f);
                 } else {
-                    normal = offset.scalar(1.0f / distance);
+                    normal = offset / distance;
                 }
 
                 particle->_pos.x = center.x + normal.x * allowed;
                 particle->_pos.y = center.y + normal.y * allowed;
 
-                float vn = velocity.dot(normal);
+                float vn = velocity.produitScalaire(normal);
                 if (vn < 0.0f) {
-                    velocity = velocity - normal.scalar((1.0f + bounce) * vn);
+                    velocity = velocity - normal * ((1.0f + bounce) * vn);
                 }
 
                 collided = true;
@@ -407,7 +424,7 @@ void Blob::applyObstacles(float dt) {
 
         if (collided) {
             particle->_vel = velocity;
-            particle->_oldPos = particle->_pos - particle->_vel.scalar(dt);
+            particle->_oldPos = particle->_pos - particle->_vel * dt;
         }
     }
 }
@@ -434,7 +451,7 @@ void Blob::split() {
             continue;
         }
         particle->_vel.x -= impulse;
-        Vector3D delta = particle->_vel.scalar(dt);
+        Vector3D delta = particle->_vel * dt;
         particle->_oldPos = particle->_pos - delta;
     }
     for (std::size_t idx : rightHalf) {
@@ -446,7 +463,7 @@ void Blob::split() {
             continue;
         }
         particle->_vel.x += impulse;
-        Vector3D delta = particle->_vel.scalar(dt);
+        Vector3D delta = particle->_vel * dt;
         particle->_oldPos = particle->_pos - delta;
     }
 
@@ -468,8 +485,8 @@ void Blob::merge() {
         if (particle == nullptr) {
             continue;
         }
-        particle->_vel = particle->_vel.scalar(0.5f);
-        Vector3D delta = particle->_vel.scalar(dt);
+        particle->_vel = particle->_vel * 0.5f;
+        Vector3D delta = particle->_vel * dt;
         particle->_oldPos = particle->_pos - delta;
     }
     splitActive = false;

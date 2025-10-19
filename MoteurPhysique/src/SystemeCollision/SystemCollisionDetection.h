@@ -1,6 +1,8 @@
 #pragma once
+
 #include <vector>
-#include "particule.h"
+
+#include "Particule.h"
 
 enum class CollisionType {
     Contact, Resting, Cable, Rod

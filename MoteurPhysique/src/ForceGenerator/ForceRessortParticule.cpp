@@ -1,25 +1,28 @@
 #include "ForceRessortParticule.h"
 
-void ForceRessortParticule::UpdateForce(Particule* particule, float dt)
+namespace {
+constexpr float kDistanceEpsilon = 1e-5f;
+}
+
+ForceRessortParticule::ForceRessortParticule(Particule* autre, float raideur, float longueurRepos)
+    : autreParticule(autre), k(raideur), longueurRepos(longueurRepos) {}
+
+void ForceRessortParticule::UpdateForce(Particule* particule, float /*dt*/)
 {
-    if (particule == nullptr || linkParticule == nullptr) {
+    if (particule == nullptr || autreParticule == nullptr || particule->estFixe()) {
         return;
     }
 
-    if (particule->_inverseMasse <= 0.0f) {
+    Vector3D direction = particule->_pos - autreParticule->_pos;
+    const float distance = direction.norme();
+
+    if (distance <= kDistanceEpsilon) {
         return;
     }
 
-    Vector3D force = particule->_pos - linkParticule->_pos; // Vecteur entre les deux particule
-    float length = force.GetNorm();
-
-    if (length <= 0.0f) {
-        return;
-    }
-
-    float extension = length - restLength; // compressé = < restlength / étiré = > restlength
-
-    force = force.scalar(-raideur * extension / length); // Force qui attire la particule vers l'autre
+    const float extension = distance - longueurRepos;
+    const Vector3D force = direction * (-k * extension / distance);
 
     particule->addForce(force);
 }
+

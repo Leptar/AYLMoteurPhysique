@@ -1,15 +1,19 @@
 #pragma once
+
 #include "ParticuleForceGenerator.h"
 
-class ForceRessortBungee : public ParticuleForceGenerator
-{
+// ---------------------------------------------------------------------------
+// Ressort de type élastique qui ne pousse qu'en traction (bungee).
+// ---------------------------------------------------------------------------
+class ForceRessortBungee : public ParticuleForceGenerator {
 public:
-    Particule* linkParticule;
-    float raideur;
-    float restLength;
-
-    ForceRessortBungee(Particule* linkParticule, float raideur, float restLength)
-        : linkParticule(linkParticule), raideur(raideur), restLength(restLength) {}
+    ForceRessortBungee(Particule* autre, float raideur, float longueurRepos);
 
     void UpdateForce(Particule* particule, float dt) override;
+
+private:
+    Particule* autreParticule;
+    float k;
+    float longueurRepos;
 };
+

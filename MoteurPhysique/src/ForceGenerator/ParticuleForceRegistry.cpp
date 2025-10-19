@@ -1,31 +1,38 @@
 #include "ParticuleForceRegistry.h"
 
+#include <algorithm>
+
 void ParticuleForceRegistry::add(Particule* particule, ParticuleForceGenerator* fg) {
-	registre.push_back({particule, fg});
+    if (particule == nullptr || fg == nullptr) {
+        return;
+    }
+    registre.push_back({particule, fg});
 }
 
 void ParticuleForceRegistry::remove(Particule* particule, ParticuleForceGenerator* fg) {
-        for (auto it = registre.begin(); it != registre.end(); ++it) {
-                if (it->particule == particule && it->fg == fg) {
-                        registre.erase(it);
-                        break;
-                }
-        }
+    registre.erase(
+        std::remove_if(
+            registre.begin(),
+            registre.end(),
+            [particule, fg](const ParticuleForceRegistration& registration) {
+                return registration.correspond(particule, fg);
+            }),
+        registre.end());
 }
 
 bool ParticuleForceRegistry::clear() {
-        if (registre.empty()) {
-                return false;
-        }
-        registre.clear();
-        return true;
+    if (registre.empty()) {
+        return false;
+    }
+    registre.clear();
+    return true;
 }
 
 void ParticuleForceRegistry::updateForces(float dt) {
-
-        for (const ParticuleForceRegistration& x : registre) {
-                if (x.fg != nullptr && x.particule != nullptr) {
-                        x.fg->UpdateForce(x.particule, dt);
-                }
+    for (const ParticuleForceRegistration& registration : registre) {
+        if (registration.generateur != nullptr && registration.particule != nullptr) {
+            registration.generateur->UpdateForce(registration.particule, dt);
         }
+    }
 }
+
