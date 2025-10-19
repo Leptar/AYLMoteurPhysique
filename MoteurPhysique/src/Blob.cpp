@@ -23,7 +23,7 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     rightHalf.clear();
     cachedAttachedCount = 0;
     splitActive = false;
-    particleRadius = radius * 0.12f;
+    particleRadius = radius * 0.07f;
 
     if (outerCount < 4) {
         outerCount = 4;
@@ -61,12 +61,12 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     }
 
     const float ringRest = 2.0f * outerRadius * std::sin(angleStep * 0.5f);
-    const float ringMax = ringRest * 1.45f;
+    const float ringMax = ringRest * 1.25f;
     const float ringStiffness = 240.0f;
     const float ringCable = ringStiffness * 1.2f;
 
     const float spokeRest = outerRadius;
-    const float spokeMax = spokeRest * 1.35f;
+    const float spokeMax = spokeRest * 1.2f;
     const float spokeStiffness = 320.0f;
     const float spokeCable = spokeStiffness * 1.3f;
 
@@ -290,7 +290,7 @@ void Blob::update(float dt) {
 void Blob::draw() const {
     ofPushStyle();
 
-    ofSetLineWidth(3.0f);
+    ofSetLineWidth(1.5f);
     ofSetColor(90, 120, 255, 120);
     for (const auto& link : links) {
         if (!link.active) {

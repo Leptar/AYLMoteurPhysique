@@ -5,7 +5,7 @@
 
 void World::setup(const ofRectangle& bounds) {
     worldBounds = bounds;
-    blob.setup(Vector3D(bounds.getCenter().x, bounds.getCenter().y, 0.0f), bounds.getWidth() * 0.085f, 12);
+    blob.setup(Vector3D(bounds.getCenter().x, bounds.getCenter().y, 0.0f), bounds.getWidth() * 0.055f, 12);
     blob.setBounds(worldBounds);
     blob.setObstacles(obstacles);
     controlAcceleration = Vector3D(0, 0, 0);
