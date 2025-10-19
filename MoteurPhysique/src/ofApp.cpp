@@ -21,13 +21,13 @@ void ofApp::setup(){
         { .masse = 0.02f,  // 20 g (balle d'airsoft)
           .vitesseInitiale = {500, -866, 0},
           .couleur = ofColor::blue,
-                .linear = 0.05f, .quadratic = 0.01f,};
+                .linear = 0.02f, .quadratic = 0.00001f};
 
         projectileConfigs[ProjectileType::Boulet] =
         { .masse = 5.0f,   // 5 kg
           .vitesseInitiale = {400, -692, 0}, // lourd, donc plus lent
           .couleur = ofColor::gray,
-         .linear = 0.f, .quadratic = 0.f,};
+         .linear = 0.005f, .quadratic = 0.0005f,};
 
         projectileConfigs[ProjectileType::Laser] =
         { .masse = 0.0001f, // quasi nul

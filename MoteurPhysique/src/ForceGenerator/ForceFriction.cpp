@@ -1,5 +1,7 @@
 #include "ForceFriction.h"
 
+#include <algorithm>
+
 ForceFriction::ForceFriction() {}
 
 void ForceFriction::UpdateForce(Particule* particule, float dt) {
@@ -23,12 +25,11 @@ void ForceFriction::UpdateForce(Particule* particule, float dt) {
 
 	float speed = particule->_vel.GetNorm();
 	float squaredSpeed = particule->_vel.GetSquareNorm();
-	float drag = k1*speed + k2*squaredSpeed;
+	float drag = k1 * speed + k2 * squaredSpeed;
+	drag = std::min(drag, 0.5f * particule->masse * speed / dt); // empeche un drag absurde
 
 	Vector3D force = particule->_vel.normalize().scalar(-drag);
 	particule->addForce(force);
-
-	k1 = 0.f;
-	k2 = 0.f;
+	
 }
 
