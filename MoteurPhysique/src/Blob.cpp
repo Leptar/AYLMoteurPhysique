@@ -8,11 +8,10 @@
 #include <cmath>
 
 namespace {
-constexpr int kRows = 3;
-constexpr int kCols = 3;
-constexpr float kSpringStiffness = 25.f;
-constexpr float kBungeeStiffness = 18.f;
-constexpr float kRestThreshold = 1.0f;
+constexpr float kCoreSpringStiffness = 6.0f;
+constexpr float kOuterSpringStiffness = 3.0f;
+constexpr float kParticleRadius = 16.0f;
+constexpr float kImpulseScale = 22.0f;
 }
 
 Blob::Blob()
@@ -32,8 +31,6 @@ void Blob::reset(const ofRectangle& bounds)
     springGenerators.clear();
     springBindings.clear();
     springConnections.clear();
-    cableConstraints.clear();
-    rodConstraints.clear();
     collidingParticles.clear();
     collisionSystem.clear();
     registry.clear();
@@ -49,86 +46,49 @@ void Blob::buildBlob(const ofRectangle& bounds)
 {
     playArea = bounds;
 
-    float horizontalSpacing = bounds.getWidth() / static_cast<float>(kCols + 1);
-    float verticalSpacing = bounds.getHeight() / static_cast<float>(kRows + 1);
-    float spacing = std::min(horizontalSpacing, verticalSpacing);
+    Vector3D center(bounds.getCenter().x, bounds.getCenter().y, 0.f);
+    float reach = std::min(bounds.getWidth(), bounds.getHeight()) * 0.12f;
+    float particleRadius = std::min(kParticleRadius, reach * 0.4f);
 
-    Vector3D start(bounds.getLeft() + spacing, bounds.getTop() + spacing, 0.f);
+    auto createParticle = [&](const Vector3D& position) {
+        float mass = 1.0f;
+        float linear = 0.15f;
+        float quadratic = 0.01f;
+        particles.emplace_back(std::make_unique<Particule>(position, Vector3D(0, 0, 0), Vector3D(0, 0, 0), mass, linear, quadratic, particleRadius));
+        return particles.back().get();
+    };
 
-    for (int row = 0; row < kRows; ++row) {
-        for (int col = 0; col < kCols; ++col) {
-            Vector3D position(start.x + col * spacing, start.y + row * spacing, 0.f);
-            float mass = 0.8f + 0.2f * static_cast<float>(row + 1);
-            float radius = 14.f;
-            float linear = 0.4f;
-            float quadratic = 0.02f;
-            particles.emplace_back(std::make_unique<Particule>(position, Vector3D(0, 0, 0), Vector3D(0, 0, 0), mass, linear, quadratic, radius));
-        }
-    }
+    Particule* centerParticle = createParticle(center);
+    Particule* topParticle = createParticle(center + Vector3D(0.f, -reach, 0.f));
+    Particule* bottomParticle = createParticle(center + Vector3D(0.f, reach, 0.f));
+    Particule* leftParticle = createParticle(center + Vector3D(-reach, 0.f, 0.f));
+    Particule* rightParticle = createParticle(center + Vector3D(reach, 0.f, 0.f));
 
-    auto index = [](int row, int col) { return row * kCols + col; };
+    auto connectSpring = [&](Particule* a, Particule* b, float stiffness) {
+        if (!a || !b)
+            return;
 
-    for (int row = 0; row < kRows; ++row) {
-        for (int col = 0; col < kCols; ++col) {
-            Particule* current = particles[index(row, col)].get();
+        float restLength = (a->_pos - b->_pos).GetNorm();
+        springConnections.push_back({a, b, restLength});
 
-            if (col + 1 < kCols) {
-                Particule* neighbour = particles[index(row, col + 1)].get();
-                float restLength = (neighbour->_pos - current->_pos).GetNorm();
-                springConnections.push_back({current, neighbour, restLength});
+        auto springAB = std::make_unique<ForceRessortParticule>(b, stiffness, restLength);
+        springBindings.push_back({a, springAB.get()});
+        springGenerators.push_back(std::move(springAB));
 
-                auto spring = std::make_unique<ForceRessortParticule>(neighbour, kSpringStiffness, restLength);
-                springBindings.push_back({current, spring.get()});
-                springGenerators.push_back(std::move(spring));
+        auto springBA = std::make_unique<ForceRessortParticule>(a, stiffness, restLength);
+        springBindings.push_back({b, springBA.get()});
+        springGenerators.push_back(std::move(springBA));
+    };
 
-                auto springBack = std::make_unique<ForceRessortParticule>(current, kSpringStiffness, restLength);
-                springBindings.push_back({neighbour, springBack.get()});
-                springGenerators.push_back(std::move(springBack));
+    connectSpring(centerParticle, topParticle, kCoreSpringStiffness);
+    connectSpring(centerParticle, bottomParticle, kCoreSpringStiffness);
+    connectSpring(centerParticle, leftParticle, kCoreSpringStiffness);
+    connectSpring(centerParticle, rightParticle, kCoreSpringStiffness);
 
-                cableConstraints.push_back({current, neighbour, restLength * 1.6f, 0.15f});
-            }
-
-            if (row + 1 < kRows) {
-                Particule* neighbour = particles[index(row + 1, col)].get();
-                float restLength = (neighbour->_pos - current->_pos).GetNorm();
-                springConnections.push_back({current, neighbour, restLength});
-
-                auto spring = std::make_unique<ForceRessortParticule>(neighbour, kSpringStiffness, restLength);
-                springBindings.push_back({current, spring.get()});
-                springGenerators.push_back(std::move(spring));
-
-                auto springBack = std::make_unique<ForceRessortParticule>(current, kSpringStiffness, restLength);
-                springBindings.push_back({neighbour, springBack.get()});
-                springGenerators.push_back(std::move(springBack));
-
-                cableConstraints.push_back({current, neighbour, restLength * 1.6f, 0.15f});
-            }
-
-            if (row + 1 < kRows && col + 1 < kCols) {
-                Particule* diagonal = particles[index(row + 1, col + 1)].get();
-                float restLength = (diagonal->_pos - current->_pos).GetNorm();
-                rodConstraints.push_back({current, diagonal, restLength});
-            }
-
-            if (row + 1 < kRows && col - 1 >= 0) {
-                Particule* diagonal = particles[index(row + 1, col - 1)].get();
-                float restLength = (diagonal->_pos - current->_pos).GetNorm();
-                rodConstraints.push_back({current, diagonal, restLength});
-            }
-        }
-    }
-
-    Particule* topCenter = particles[index(0, kCols / 2)].get();
-    Vector3D anchor(bounds.getCenter().x, bounds.getTop() - spacing * 0.5f, 0.f);
-    auto fixedSpring = std::make_unique<ForceRessortFixe>(anchor, kSpringStiffness, spacing);
-    springBindings.push_back({topCenter, fixedSpring.get()});
-    springGenerators.push_back(std::move(fixedSpring));
-
-    Particule* bottomCenter = particles[index(kRows - 1, kCols / 2)].get();
-    Vector3D anchorBottom(bounds.getCenter().x, bounds.getBottom() + spacing * 0.25f, 0.f);
-    auto lowerSpring = std::make_unique<ForceRessortFixe>(anchorBottom, kBungeeStiffness, spacing);
-    springBindings.push_back({bottomCenter, lowerSpring.get()});
-    springGenerators.push_back(std::move(lowerSpring));
+    connectSpring(topParticle, leftParticle, kOuterSpringStiffness);
+    connectSpring(topParticle, rightParticle, kOuterSpringStiffness);
+    connectSpring(bottomParticle, leftParticle, kOuterSpringStiffness);
+    connectSpring(bottomParticle, rightParticle, kOuterSpringStiffness);
 
     updatePotentialEnergy();
 }
@@ -181,24 +141,6 @@ void Blob::detectAndResolveCollisions()
                 collidingParticles.insert(a);
                 collidingParticles.insert(b);
             }
-        }
-    }
-
-    for (const CableConstraint& cable : cableConstraints) {
-        float currentLength = (cable.a->_pos - cable.b->_pos).GetNorm();
-        if (currentLength > cable.maxLength) {
-            collisionSystem.addCableConstraint(cable.a, cable.b, cable.maxLength, cable.restitution);
-            collidingParticles.insert(cable.a);
-            collidingParticles.insert(cable.b);
-        }
-    }
-
-    for (const RodConstraint& rod : rodConstraints) {
-        float currentLength = (rod.a->_pos - rod.b->_pos).GetNorm();
-        if (std::fabs(currentLength - rod.length) > kRestThreshold) {
-            collisionSystem.addRodConstraint(rod.a, rod.b, rod.length);
-            collidingParticles.insert(rod.a);
-            collidingParticles.insert(rod.b);
         }
     }
 
@@ -294,6 +236,15 @@ std::size_t Blob::particleCount() const
 std::size_t Blob::activeCollisionCount() const
 {
     return collidingParticles.size();
+}
+
+void Blob::nudge(const Vector3D& impulse)
+{
+    Vector3D scaledImpulse = impulse.scalar(kImpulseScale);
+
+    for (auto& particle : particles) {
+        particle->_vel = particle->_vel + scaledImpulse;
+    }
 }
 
 float Blob::totalMass() const

@@ -142,10 +142,11 @@ void ofApp::drawHud() const
                 stream << "Énergie potentielle : " << ofToString(blob.potentialEnergy(), 2) << " J\n";
                 stream << (applyGravityBlob ? "[x]" : "[ ]") << " Gravité (G)\n";
                 stream << (applyFrictionBlob ? "[x]" : "[ ]") << " Traînée (F)\n";
-                stream << (applySpringsBlob ? "[x]" : "[ ]") << " Ressorts (S)\n";
+                stream << (applySpringsBlob ? "[x]" : "[ ]") << " Ressorts (M)\n";
                 stream << (useVerletBlob ? "[x]" : "[ ]") << " Intégration Verlet (V)\n";
                 stream << (showSprings ? "[x]" : "[ ]") << " Afficher les ressorts (L)\n";
                 stream << (highlightCollisions ? "[x]" : "[ ]") << " Mettre en évidence les collisions (C)\n";
+                stream << "Déplacer le blob : Flèches ou ZQSD\n";
                 stream << "Réinitialiser le blob : R\n";
         }
 
@@ -230,7 +231,7 @@ void ofApp::keyPressed(int key){
                 }
         }
 
-        if (key == 's' || key == 'S') {
+        if (key == 'm' || key == 'M') {
                 if (activeScene == SceneType::Phase2Blob) {
                         applySpringsBlob = !applySpringsBlob;
                 }
@@ -259,6 +260,21 @@ void ofApp::keyPressed(int key){
                         projectiles.clear();
                 } else {
                         blob.reset(blobBounds);
+                }
+        }
+
+        if (activeScene == SceneType::Phase2Blob) {
+                if (key == OF_KEY_LEFT || key == 'q' || key == 'Q') {
+                        blob.nudge(Vector3D(-1.f, 0.f, 0.f));
+                }
+                if (key == OF_KEY_RIGHT || key == 'd' || key == 'D') {
+                        blob.nudge(Vector3D(1.f, 0.f, 0.f));
+                }
+                if (key == OF_KEY_UP || key == 'z' || key == 'Z') {
+                        blob.nudge(Vector3D(0.f, -1.f, 0.f));
+                }
+                if (key == OF_KEY_DOWN || key == 's' || key == 'S') {
+                        blob.nudge(Vector3D(0.f, 1.f, 0.f));
                 }
         }
 
