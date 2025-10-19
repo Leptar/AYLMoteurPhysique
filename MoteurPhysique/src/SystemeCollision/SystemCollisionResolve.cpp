@@ -16,6 +16,7 @@ void SystemCollisionResolve::resolve(const Collision& collision)
     float vRelNorm = relativeVelocity.dot(collision.contactNormal);
 
     if (std::fabs(vRelNorm) < 0.01f) {
+        // Relative velocity is too small to warrant an impulse; only resolve penetration.
         if (collision.penetration > 0.f)
             seperate(collision);
         return;
@@ -25,6 +26,7 @@ void SystemCollisionResolve::resolve(const Collision& collision)
     if (totalInverseMass <= 0.f)
         return;
 
+    // Compute the impulse that will flip the relative velocity along the normal.
     float impulseScalar = -(1.f + collision.restitution) * vRelNorm;
     impulseScalar /= totalInverseMass;
 
@@ -59,6 +61,7 @@ void SystemCollisionResolve::resolveConstraint(const Collision& collision)
     if (totalInverseMass <= 0.f)
         return;
 
+    // Project both particles along the constraint axis to remove the penetration.
     float correctionMagnitude = collision.penetration / totalInverseMass;
     Vector3D correction = direction.scalar(correctionMagnitude);
 

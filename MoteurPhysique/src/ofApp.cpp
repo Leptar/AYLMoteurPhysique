@@ -17,6 +17,7 @@ ofColor backgroundBottom(4, 6, 12);
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+        // Configure default projectile presets for the first scene.
         projectileConfigs[ProjectileType::Balle] =
         { .masse = 0.02f,  // 20 g (balle d'airsoft)
           .vitesseInitiale = {500, -866, 0},
@@ -41,6 +42,7 @@ void ofApp::setup(){
           .couleur = ofColor::red,
         .linear = 0.02f, .quadratic = 0.005f,};
 
+        // Create shared force generators for the projectile scene.
         forces[ForceType::Gravity] = std::make_unique<ForceGravity>();
         forces[ForceType::Friction] = std::make_unique<ForceFriction>();
 
@@ -65,9 +67,11 @@ void ofApp::update(){
 
         switch (activeScene) {
         case SceneType::Phase1Projectiles:
+                // Forward time progression to the projectile demo.
                 updateProjectiles(dt);
                 break;
         case SceneType::Phase2Blob:
+                // Collect player input and push the blob simulation forward.
                 applyBlobMovementInput(dt);
                 blob.update(dt, useVerletBlob, applyGravityBlob, applyFrictionBlob, applySpringsBlob);
                 break;
@@ -80,9 +84,11 @@ void ofApp::draw(){
 
         switch (activeScene) {
         case SceneType::Phase1Projectiles:
+                // Draw ballistic trajectories and helpers.
                 drawProjectiles();
                 break;
         case SceneType::Phase2Blob:
+                // Render the blob and optional diagnostics.
                 blob.draw(showSprings, highlightCollisions);
                 break;
         }
@@ -101,17 +107,21 @@ void ofApp::updateProjectiles(float dt)
         for (auto& projectile : projectiles) {
                 Particule* particule = projectile.particule.get();
                 if (applyGravityPhase1) {
+                        // Register gravity for this timestep.
                         projectileRegistry.add(particule, forces[ForceType::Gravity].get());
                 }
                 if (applyFrictionPhase1) {
+                        // Queue drag so fast projectiles eventually slow down.
                         projectileRegistry.add(particule, forces[ForceType::Friction].get());
                 }
         }
 
+        // Apply all queued forces before integrating.
         projectileRegistry.updateForces(dt);
         projectileRegistry.clear();
 
         for (auto& projectile : projectiles) {
+                // Integrate each projectile using its internal routine.
                 projectile.update(dt);
         }
 }
@@ -135,6 +145,7 @@ void ofApp::applyBlobMovementInput(float dt)
                 (movingDown ? 1.f : 0.f) - (movingUp ? 1.f : 0.f),
                 0.f);
 
+        // Delegate to the blob so it can translate the intent into forces.
         blob.applyMovement(direction, dt);
 }
 
@@ -180,7 +191,7 @@ void ofApp::keyPressed(int key){
 
         if (key == OF_KEY_F7) {
                 // ouvrir une console si elle n'existe pas déjà
-                #ifdef _WIN32
+#ifdef _WIN32
                 if (!GetConsoleWindow()) {
                         AllocConsole();
                         freopen("CONOUT$", "w", stdout);
@@ -221,8 +232,10 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == OF_KEY_TAB) {
+                // Toggle between both demo scenes.
                 activeScene = (activeScene == SceneType::Phase1Projectiles) ? SceneType::Phase2Blob : SceneType::Phase1Projectiles;
                 if (activeScene == SceneType::Phase1Projectiles) {
+                        // Ensure lingering input does not keep moving the blob when we leave the scene.
                         clearBlobMovementKeys();
                 }
         }
@@ -281,14 +294,17 @@ void ofApp::keyPressed(int key){
 
         if (key == 'r' || key == 'R') {
                 if (activeScene == SceneType::Phase1Projectiles) {
+                        // Clear every projectile and wait for the user to spawn new ones.
                         projectiles.clear();
                 } else {
+                        // Rebuild the blob in its original layout.
                         blob.reset(blobBounds);
                 }
         }
 
         if (activeScene == SceneType::Phase2Blob) {
                 if (key == OF_KEY_BACKSPACE) {
+                        // Detach the next available particle when Backspace is pressed.
                         blob.detachPeripheralParticle();
                 }
                 if (key == OF_KEY_RETURN
@@ -296,6 +312,7 @@ void ofApp::keyPressed(int key){
                     || key == OF_KEY_ENTER
 #endif
                 ) {
+                        // Reconnect every detached particle when Enter is pressed.
                         blob.reattachAllParticles();
                 }
         }
@@ -343,6 +360,7 @@ void ofApp::setBlobMovementKey(int key, bool isPressed)
 
         switch (key) {
         case OF_KEY_LEFT:
+                // Arrow keys mirror the traditional WASD/ZQSD layout.
                 movingLeft = isPressed;
                 break;
         case OF_KEY_RIGHT:
@@ -360,6 +378,7 @@ void ofApp::setBlobMovementKey(int key, bool isPressed)
                 int lowered = std::tolower(static_cast<unsigned char>(key));
                 switch (lowered) {
                 case 'q':
+                        // Support AZERTY layout (ZQSD) while keeping QWERTY compatibility.
                         movingLeft = isPressed;
                         break;
                 case 'd':

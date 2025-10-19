@@ -17,24 +17,31 @@ class ofApp : public ofBaseApp{
                 void draw();
 
                 void keyPressed(int key);
-		void keyReleased(int key);
-		void mouseMoved(int x, int y );
-		void mouseDragged(int x, int y, int button);
-		void mousePressed(int x, int y, int button);
-		void mouseReleased(int x, int y, int button);
-		void mouseEntered(int x, int y);
-		void mouseExited(int x, int y);
-		void windowResized(int w, int h);
+                void keyReleased(int key);
+                void mouseMoved(int x, int y );
+                void mouseDragged(int x, int y, int button);
+                void mousePressed(int x, int y, int button);
+                void mouseReleased(int x, int y, int button);
+                void mouseEntered(int x, int y);
+                void mouseExited(int x, int y);
+                void windowResized(int w, int h);
                 void dragEvent(ofDragInfo dragInfo);
                 void gotMessage(ofMessage msg);
         private:
+                /// Simple state machine identifying the active demo.
                 enum class SceneType { Phase1Projectiles, Phase2Blob };
 
+                /// Apply all configured forces to the active projectiles and integrate them.
                 void updateProjectiles(float dt);
+                /// Draw helpers for each projectile in the first scene.
                 void drawProjectiles() const;
+                /// Render the debug HUD describing the current configuration.
                 void drawHud() const;
+                /// Translate keyboard intent into a force request for the blob.
                 void applyBlobMovementInput(float dt);
+                /// Track when blob movement keys are pressed or released.
                 void setBlobMovementKey(int key, bool isPressed);
+                /// Reset all blob movement flags, typically when leaving the scene.
                 void clearBlobMovementKeys();
 
                 std::vector<Projectile> projectiles;
