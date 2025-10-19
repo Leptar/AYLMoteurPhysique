@@ -157,7 +157,6 @@ void ofApp::drawHud() const
         } else {
                 stream << "Particules du blob : " << blob.particleCount() << "\n";
                 stream << "Collisions actives : " << blob.activeCollisionCount() << "\n";
-                stream << "Énergie potentielle : " << ofToString(blob.potentialEnergy(), 2) << " J\n";
                 stream << (applyGravityBlob ? "[x]" : "[ ]") << " Gravité (G)\n";
                 stream << (applyFrictionBlob ? "[x]" : "[ ]") << " Traînée (F)\n";
                 stream << (applySpringsBlob ? "[x]" : "[ ]") << " Ressorts (M)\n";
