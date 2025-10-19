@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 #include <limits>
 #include <sstream>
 
@@ -334,6 +335,9 @@ void ofApp::keyReleased(int key){
 //--------------------------------------------------------------
 void ofApp::setBlobMovementKey(int key, bool isPressed)
 {
+        if (activeScene != SceneType::Phase2Blob)
+                return;
+
         switch (key) {
         case OF_KEY_LEFT:
                 movingLeft = isPressed;
@@ -349,14 +353,22 @@ void ofApp::setBlobMovementKey(int key, bool isPressed)
                 break;
         }
 
-        if (key == 'q' || key == 'Q') {
-                movingLeft = isPressed;
-        } else if (key == 'd' || key == 'D') {
-                movingRight = isPressed;
-        } else if (key == 'z' || key == 'Z') {
-                movingUp = isPressed;
-        } else if (key == 's' || key == 'S') {
-                movingDown = isPressed;
+        if (key >= 0 && key <= std::numeric_limits<unsigned char>::max()) {
+                int lowered = std::tolower(static_cast<unsigned char>(key));
+                switch (lowered) {
+                case 'q':
+                        movingLeft = isPressed;
+                        break;
+                case 'd':
+                        movingRight = isPressed;
+                        break;
+                case 'z':
+                        movingUp = isPressed;
+                        break;
+                case 's':
+                        movingDown = isPressed;
+                        break;
+                }
         }
 }
 
