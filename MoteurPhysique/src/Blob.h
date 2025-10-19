@@ -67,8 +67,6 @@ private:
     void applyForces(float dt, bool useVerletIntegration, bool applyGravity, bool applyFriction, bool applySprings);
     /// Détecte les recouvrements particule/plan et les résout via le système de collision.
     void detectAndResolveCollisions();
-    /// Recalcule le cache d'énergie potentielle gravitationnelle du blob.
-    void updatePotentialEnergy();
 
     ofRectangle playArea;
     std::vector<std::unique_ptr<Particule>> particles;
@@ -84,6 +82,4 @@ private:
 
     SystemCollisionDetection collisionSystem;
     std::unordered_set<const Particule*> collidingParticles;
-
-    float cachedPotentialEnergy = 0.f;
 };

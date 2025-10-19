@@ -114,7 +114,6 @@ void Blob::buildBlob(const ofRectangle& bounds)
         }
     }
 
-    updatePotentialEnergy();
 }
 
 void Blob::applyForces(float dt, bool useVerletIntegration, bool applyGravity, bool applyFriction, bool applySprings)
@@ -210,18 +209,6 @@ void Blob::detectAndResolveCollisions()
     collisionSystem.resolveAll();
 }
 
-void Blob::updatePotentialEnergy()
-{
-    float g = std::fabs(gravity->Gravity.y);
-    float floorY = playArea.getBottom();
-
-    cachedPotentialEnergy = 0.f;
-    for (const auto& particle : particles) {
-        float height = std::max(0.f, floorY - particle->_pos.y);
-        cachedPotentialEnergy += particle->masse * g * height;
-    }
-}
-
 void Blob::update(float dt, bool useVerletIntegration, bool applyGravity, bool applyFriction, bool applySprings)
 {
     if (particles.empty())
@@ -229,7 +216,6 @@ void Blob::update(float dt, bool useVerletIntegration, bool applyGravity, bool a
 
     applyForces(dt, useVerletIntegration, applyGravity, applyFriction, applySprings);
     detectAndResolveCollisions();
-    updatePotentialEnergy();
 }
 
 void Blob::draw(bool showSprings, bool highlightCollisions) const
@@ -350,9 +336,4 @@ float Blob::totalMass() const
         sum += particle->masse;
     }
     return sum;
-}
-
-float Blob::potentialEnergy() const
-{
-    return cachedPotentialEnergy;
 }
