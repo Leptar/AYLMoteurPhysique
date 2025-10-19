@@ -1,28 +1,27 @@
 #include "ForceRessortBungee.h"
 
-namespace {
-constexpr float kDistanceEpsilon = 1e-5f;
-}
-
-ForceRessortBungee::ForceRessortBungee(Particule* autre, float raideur, float longueurRepos)
-    : autreParticule(autre), k(raideur), longueurRepos(longueurRepos) {}
-
-void ForceRessortBungee::UpdateForce(Particule* particule, float /*dt*/)
+void ForceRessortBungee::UpdateForce(Particule* particule, float dt)
 {
-    if (particule == nullptr || autreParticule == nullptr || particule->estFixe()) {
+    if (particule == nullptr || linkParticule == nullptr) {
         return;
     }
 
-    Vector3D direction = particule->_pos - autreParticule->_pos;
-    const float distance = direction.norme();
-
-    if (distance <= longueurRepos + kDistanceEpsilon) {
+    if (particule->_inverseMasse <= 0.0f) {
         return;
     }
 
-    const float extension = distance - longueurRepos;
-    const Vector3D force = direction * (-k * extension / distance);
+    Vector3D force = particule->_pos - linkParticule->_pos; // Vecteur entre les deux particule
+    float length = force.GetNorm();
+
+    if (length <= restLength) return;
+
+    if (length <= 0.0f) {
+        return;
+    }
+
+    float extension = length - restLength; // compressé = < restlength / étiré = > restlength
+
+    force = force.scalar(-raideur * extension / length); // Force qui attire la particule vers l'autre
 
     particule->addForce(force);
 }
-

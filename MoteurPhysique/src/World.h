@@ -5,9 +5,6 @@
 
 #include "Blob.h"
 
-// ---------------------------------------------------------------------------
-// Conteneur haut niveau orchestrant le blob et ses obstacles.
-// ---------------------------------------------------------------------------
 class World {
 public:
     void setup(const ofRectangle& bounds);

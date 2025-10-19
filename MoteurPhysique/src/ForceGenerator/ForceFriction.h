@@ -1,18 +1,12 @@
 #pragma once
+#include "ForceGravity.h"
 
-#include "ParticuleForceGenerator.h"
-
-// ---------------------------------------------------------------------------
-// Générateur de force de frottement combinant termes linéaire et quadratique.
-// ---------------------------------------------------------------------------
 class ForceFriction : public ParticuleForceGenerator {
+
+protected:
+	float k1, k2 = 0.f;
 public:
-    ForceFriction(float coefficientLineaire, float coefficientQuadratique);
 
-    void UpdateForce(Particule* particule, float dt) override;
-
-private:
-    float k1;
-    float k2;
+	ForceFriction();
+	virtual void UpdateForce(Particule* particule, float dt);
 };
-

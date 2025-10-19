@@ -1,7 +1,5 @@
 #include "Tests/3DVectorTest.h"
 
-#include <cmath>
-
 void Vector3DTest::TestAddition() {
 	Vector3D v1(1, 2, 3);
 	Vector3D v2(4, 5, 6);
@@ -25,11 +23,11 @@ void Vector3DTest::TestSubtraction() {
 }
 
 void Vector3DTest::TestScalarProduct() {
-        Vector3D v1(1, 2, 3);
-        Vector3D v2 = v1 * 2.0f;
-        assert(v2.x == 2);
-        assert(v2.y == 4);
-        assert(v2.z == 6);
+	Vector3D v1(1, 2, 3);
+	Vector3D v2 = v1.scalar(2);
+	assert(v2.x == 2);
+	assert(v2.y == 4);
+	assert(v2.z == 6);
 
 	std::cout << "Vector3D produit scalaire validé" << std::endl;
 }
@@ -38,10 +36,10 @@ void Vector3DTest::TestDot() {
 	Vector3D v1(1, 0, 0);
 	Vector3D v2(0, 1, 0);
 
-        assert(v1.produitScalaire(v2) == 0);
+	assert(v1.dot(v2) == 0);
 
 	Vector3D v3(2, 3, 4);
-        assert(v3.produitScalaire(v3) == v3.normeCarree());
+	assert(v3.dot(v3) == v3.GetSquareNorm());
 
 	std::cout << "Vector3D produit scalaire (dot) validé" << std::endl;
 }
@@ -49,7 +47,7 @@ void Vector3DTest::TestDot() {
 void Vector3DTest::TestCross() {
 	Vector3D v1(1, 0, 0);
 	Vector3D v2(0, 1, 0);
-        Vector3D v3 = v1.produitVectoriel(v2);
+	Vector3D v3 = v1.cross(v2);
 
 	assert(v3.x == 0);
 	assert(v3.y == 0);
@@ -61,17 +59,17 @@ void Vector3DTest::TestCross() {
 void Vector3DTest::TestNorms() {
 	Vector3D v1(3, 4, 0);
 
-        assert(v1.norme() == 5.0f);
-        assert(v1.normeCarree() == 25.0f);
+	assert(v1.GetNorm() == 5.0f);
+	assert(v1.GetSquareNorm() == 25.0f);
 
 	std::cout << "Vector3D normes validées" << std::endl;
 }
 
 void Vector3DTest::TestNormalize() {
 	Vector3D v1(3, 0, 0);
-        Vector3D n = v1.normalise();
+	Vector3D n = v1.normalize();
 
-        assert(std::fabs(n.norme() - 1.0f) < 1e-6);
+	assert(std::fabs(n.GetNorm() - 1.0f) < 1e-6);
 
 	std::cout << "Vector3D normalisation validée" << std::endl;
 }

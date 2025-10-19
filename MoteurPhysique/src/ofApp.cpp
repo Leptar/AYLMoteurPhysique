@@ -44,7 +44,7 @@ void ofApp::setup(){
 
         registreClass = std::make_unique<ParticuleForceRegistry>();
         forces[ForceType::Gravity] = std::make_unique<ForceGravity>();
-        forces[ForceType::Friction] = std::make_unique<ForceFriction>(0.0f, 0.0f);
+        forces[ForceType::Friction] = std::make_unique<ForceFriction>();
 
         world.setup(ofRectangle(0, 0, ofGetWidth(), ofGetHeight()));
         rebuildBlobObstacles(ofGetWidth(), ofGetHeight());
@@ -237,7 +237,7 @@ void ofApp::updateProjectiles(float dt) {
 
         for (auto& projectile : projectiles) {
                 for (auto& forceEntry : forces) {
-                        registreClass->add(projectile.getParticule(), forceEntry.second.get());
+                        registreClass->add(projectile.particule, forceEntry.second.get());
                 }
         }
 
@@ -265,7 +265,7 @@ void ofApp::drawProjectiles() const {
 }
 
 void ofApp::updateBlob(float dt) {
-        Vector3D control = Vector3D::zero();
+        Vector3D control(0, 0, 0);
         if (moveUp) control.y -= kControlStrength;
         if (moveDown) control.y += kControlStrength;
         if (moveLeft) control.x -= kControlStrength;
@@ -327,13 +327,13 @@ void ofApp::rebuildBlobObstacles(int width, int height) {
         float circleRadius = minAxis * 0.07f;
         float smallCircle = circleRadius * 0.65f;
 
-        blobObstacles.push_back(Blob::Obstacle::creerRectangle(
+        blobObstacles.push_back(Blob::Obstacle::makeRectangle(
                 ofRectangle(width * 0.22f - tallWidth * 0.5f, height * 0.62f - tallHeight * 0.5f, tallWidth, tallHeight)));
-        blobObstacles.push_back(Blob::Obstacle::creerRectangle(
+        blobObstacles.push_back(Blob::Obstacle::makeRectangle(
                 ofRectangle(width * 0.58f - wideWidth * 0.5f, height * 0.42f - wideHeight * 0.5f, wideWidth, wideHeight)));
-        blobObstacles.push_back(Blob::Obstacle::creerCercle(
+        blobObstacles.push_back(Blob::Obstacle::makeCircle(
                 Vector3D(width * 0.35f, height * 0.32f, 0.0f), circleRadius));
-        blobObstacles.push_back(Blob::Obstacle::creerCercle(
+        blobObstacles.push_back(Blob::Obstacle::makeCircle(
                 Vector3D(width * 0.75f, height * 0.68f, 0.0f), smallCircle));
 
         world.setObstacles(blobObstacles);

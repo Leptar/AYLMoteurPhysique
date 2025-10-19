@@ -1,18 +1,10 @@
 #pragma once
-
 #include "ParticuleForceGenerator.h"
 
-// ---------------------------------------------------------------------------
-// Générateur appliquant la gravité uniforme sur une particule.
-// ---------------------------------------------------------------------------
-class ForceGravity : public ParticuleForceGenerator {
+class ForceGravity : public ParticuleForceGenerator{
 public:
-    ForceGravity();
+	Vector3D Gravity;
 
-    void definirGravite(const Vector3D& nouvelleGravite);
-    void UpdateForce(Particule* particule, float dt) override;
-
-private:
-    Vector3D gravite;
+	ForceGravity();
+	virtual void UpdateForce(Particule* particule, float dt);
 };
-

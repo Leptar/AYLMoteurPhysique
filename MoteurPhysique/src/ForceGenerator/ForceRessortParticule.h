@@ -1,19 +1,15 @@
 #pragma once
-
 #include "ParticuleForceGenerator.h"
 
-// ---------------------------------------------------------------------------
-// Ressort reliant deux particules libres.
-// ---------------------------------------------------------------------------
-class ForceRessortParticule : public ParticuleForceGenerator {
+class ForceRessortParticule : public ParticuleForceGenerator
+{
 public:
-    ForceRessortParticule(Particule* autre, float raideur, float longueurRepos);
+    Particule* linkParticule;
+    float raideur;
+    float restLength;
+
+    ForceRessortParticule(Particule* linkParticule, float raideur, float restLength)
+        : linkParticule(linkParticule), raideur(raideur), restLength(restLength) {}
 
     void UpdateForce(Particule* particule, float dt) override;
-
-private:
-    Particule* autreParticule;
-    float k;
-    float longueurRepos;
 };
-

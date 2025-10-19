@@ -1,17 +1,18 @@
 #include "ForceGravity.h"
 
-ForceGravity::ForceGravity() : gravite(0.0f, 98.1f, 0.0f) {}
-
-void ForceGravity::definirGravite(const Vector3D& nouvelleGravite) {
-    gravite = nouvelleGravite;
+ForceGravity::ForceGravity() {
+	Gravity = Vector3D(0, 98.1f, 0);
 }
 
-void ForceGravity::UpdateForce(Particule* particule, float /*dt*/) {
-    if (particule == nullptr || particule->estFixe()) {
-        return;
-    }
+void ForceGravity::UpdateForce(Particule* particule, float dt) {
+        if (particule == nullptr) {
+                return;
+        }
 
-    const float masse = 1.0f / particule->_inverseMasse;
-    particule->addForce(gravite * masse);
+        if (particule->_inverseMasse <= 0.0f) {
+                return;
+        }
+
+        float masse = 1.0f / particule->_inverseMasse;
+        particule->addForce(Gravity.scalar(masse));
 }
-

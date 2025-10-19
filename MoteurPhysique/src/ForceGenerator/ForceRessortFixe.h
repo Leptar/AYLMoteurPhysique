@@ -1,19 +1,15 @@
 #pragma once
-
 #include "ParticuleForceGenerator.h"
 
-// ---------------------------------------------------------------------------
-// Ressort reliant une particule à un point fixe de l'espace.
-// ---------------------------------------------------------------------------
-class ForceRessortFixe : public ParticuleForceGenerator {
+class ForceRessortFixe : public ParticuleForceGenerator
+{
 public:
-    ForceRessortFixe(const Vector3D& ancre, float raideur, float longueurRepos);
+    Vector3D anchreFixe;
+    float raideur;
+    float restLength;
+
+    ForceRessortFixe(Vector3D anchor, float radius, float restLength)
+        : anchreFixe(anchor), raideur(radius), restLength(restLength) {}
 
     void UpdateForce(Particule* particule, float dt) override;
-
-private:
-    Vector3D pointAncrage;
-    float k;
-    float longueurRepos;
 };
-
