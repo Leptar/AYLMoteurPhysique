@@ -1,17 +1,22 @@
 #pragma once
 
+#include "Blob.h"
 #include "ForceGenerator/ParticuleForceRegistry.h"
 #include "ofMain.h"
 #include "Projectile.h"
 
+#include <map>
+#include <memory>
+#include <vector>
+
 class ofApp : public ofBaseApp{
 
-	public:
-		void setup();
-		void update();
-		void draw();
+        public:
+                void setup();
+                void update();
+                void draw();
 
-		void keyPressed(int key);
+                void keyPressed(int key);
 		void keyReleased(int key);
 		void mouseMoved(int x, int y );
 		void mouseDragged(int x, int y, int button);
@@ -20,14 +25,47 @@ class ofApp : public ofBaseApp{
 		void mouseEntered(int x, int y);
 		void mouseExited(int x, int y);
 		void windowResized(int w, int h);
-		void dragEvent(ofDragInfo dragInfo);
-		void gotMessage(ofMessage msg);
-	private:
-		std::vector<Projectile> projectiles;
-		std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+                void dragEvent(ofDragInfo dragInfo);
+                void gotMessage(ofMessage msg);
+        private:
+                enum class SceneType { Phase1Projectiles, Phase2Blob };
 
-		ParticuleForceRegistry* registreClass = nullptr;
-		std::map<ForceType, ParticuleForceGenerator*> Forces;
+                void updateProjectiles(float dt);
+                void drawProjectiles() const;
+                void drawHud() const;
+                void applyBlobMovementInput(float dt);
+                void setBlobMovementKey(int key, bool isPressed);
+                void clearBlobMovementKeys();
 
-		uint64_t lastTime = 0;
+                std::vector<Projectile> projectiles;
+                std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+
+                ParticuleForceRegistry projectileRegistry;
+                std::map<ForceType, std::unique_ptr<ParticuleForceGenerator>> forces;
+
+                Blob blob;
+                ofRectangle blobBounds;
+
+                SceneType activeScene = SceneType::Phase1Projectiles;
+
+                bool applyGravityPhase1 = true;
+                bool applyFrictionPhase1 = true;
+
+                bool applyGravityBlob = true;
+                bool applyFrictionBlob = true;
+                bool applySpringsBlob = true;
+                bool useVerletBlob = true;
+
+                bool showHud = true;
+                bool showSprings = true;
+                bool highlightCollisions = true;
+
+                bool movingLeft = false;
+                bool movingRight = false;
+                bool movingUp = false;
+                bool movingDown = false;
+
+                float lastDeltaTime = 0.f;
+
+                uint64_t lastTime = 0;
 };
