@@ -12,7 +12,8 @@ namespace {
 constexpr float kCoreSpringStiffness = 6.0f;
 constexpr float kOuterSpringStiffness = 3.0f;
 constexpr float kParticleRadius = 16.0f;
-constexpr float kImpulseScale = 22.0f;
+constexpr float kMovementImpulse = 22.0f;
+constexpr float kMovementBrake = 14.0f;
 constexpr std::size_t kPeripheralParticleCount = 8;
 constexpr float kTwoPi = 6.28318530717958647692f;
 }
@@ -253,19 +254,36 @@ std::size_t Blob::activeCollisionCount() const
     return collidingParticles.size();
 }
 
-void Blob::nudge(const Vector3D& impulse, float intensity)
+void Blob::applyMovement(const Vector3D& inputDirection, float dt)
 {
-    if (particles.empty() || !centerParticle || intensity <= 0.f)
+    if (!centerParticle || dt <= 0.f)
         return;
 
-    float magnitude = std::sqrt(impulse.x * impulse.x + impulse.y * impulse.y + impulse.z * impulse.z);
-    if (magnitude <= std::numeric_limits<float>::epsilon())
-        return;
+    auto hasInput = [](const Vector3D& vector) {
+        return std::fabs(vector.x) > std::numeric_limits<float>::epsilon() ||
+               std::fabs(vector.y) > std::numeric_limits<float>::epsilon() ||
+               std::fabs(vector.z) > std::numeric_limits<float>::epsilon();
+    };
 
-    Vector3D direction = impulse.scalar(1.f / magnitude);
-    Vector3D scaledImpulse = direction.scalar(kImpulseScale * intensity);
+    if (hasInput(inputDirection)) {
+        float magnitude = std::sqrt(
+                inputDirection.x * inputDirection.x +
+                inputDirection.y * inputDirection.y +
+                inputDirection.z * inputDirection.z);
 
-    centerParticle->_vel = centerParticle->_vel + scaledImpulse;
+        if (magnitude <= std::numeric_limits<float>::epsilon())
+            return;
+
+        Vector3D direction = inputDirection.scalar(1.f / magnitude);
+
+        float safeDt = std::max(dt, 0.0001f);
+        float impulse = kMovementImpulse * centerParticle->masse;
+        Vector3D force = direction.scalar(impulse / safeDt);
+        centerParticle->addForce(force);
+    } else {
+        Vector3D brakeForce = centerParticle->_vel.scalar(-kMovementBrake * centerParticle->masse);
+        centerParticle->addForce(brakeForce);
+    }
 }
 
 float Blob::totalMass() const

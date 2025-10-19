@@ -127,9 +127,6 @@ void ofApp::drawProjectiles() const
 //--------------------------------------------------------------
 void ofApp::applyBlobMovementInput(float dt)
 {
-        if (!(movingLeft || movingRight || movingUp || movingDown))
-                return;
-
         if (dt <= 0.f)
                 return;
 
@@ -138,16 +135,7 @@ void ofApp::applyBlobMovementInput(float dt)
                 (movingDown ? 1.f : 0.f) - (movingUp ? 1.f : 0.f),
                 0.f);
 
-        float magnitude = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-        if (magnitude <= std::numeric_limits<float>::epsilon())
-                return;
-
-        direction = direction.scalar(1.f / magnitude);
-        float intensity = std::clamp(dt * 60.f, 0.f, 3.f);
-        if (intensity <= 0.f)
-                return;
-
-        blob.nudge(direction, intensity);
+        blob.applyMovement(direction, dt);
 }
 
 //--------------------------------------------------------------
