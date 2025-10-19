@@ -17,7 +17,7 @@ ofColor backgroundBottom(4, 6, 12);
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-        // Configure default projectile presets for the first scene.
+        // Configure les préréglages de projectiles par défaut pour la première scène.
         projectileConfigs[ProjectileType::Balle] =
         { .masse = 0.02f,  // 20 g (balle d'airsoft)
           .vitesseInitiale = {500, -866, 0},
@@ -42,7 +42,7 @@ void ofApp::setup(){
           .couleur = ofColor::red,
         .linear = 0.02f, .quadratic = 0.005f,};
 
-        // Create shared force generators for the projectile scene.
+        // Créer les générateurs de forces partagés pour la scène des projectiles.
         forces[ForceType::Gravity] = std::make_unique<ForceGravity>();
         forces[ForceType::Friction] = std::make_unique<ForceFriction>();
 
@@ -67,11 +67,11 @@ void ofApp::update(){
 
         switch (activeScene) {
         case SceneType::Phase1Projectiles:
-                // Forward time progression to the projectile demo.
+                // Faire avancer la progression temporelle de la démonstration de projectiles.
                 updateProjectiles(dt);
                 break;
         case SceneType::Phase2Blob:
-                // Collect player input and push the blob simulation forward.
+                // Récupérer les entrées du joueur et faire avancer la simulation du blob.
                 applyBlobMovementInput(dt);
                 blob.update(dt, useVerletBlob, applyGravityBlob, applyFrictionBlob, applySpringsBlob);
                 break;
@@ -84,11 +84,11 @@ void ofApp::draw(){
 
         switch (activeScene) {
         case SceneType::Phase1Projectiles:
-                // Draw ballistic trajectories and helpers.
+                // Dessiner les trajectoires balistiques et leurs repères.
                 drawProjectiles();
                 break;
         case SceneType::Phase2Blob:
-                // Render the blob and optional diagnostics.
+                // Afficher le blob et les diagnostics optionnels.
                 blob.draw(showSprings, highlightCollisions);
                 break;
         }
@@ -107,21 +107,21 @@ void ofApp::updateProjectiles(float dt)
         for (auto& projectile : projectiles) {
                 Particule* particule = projectile.particule.get();
                 if (applyGravityPhase1) {
-                        // Register gravity for this timestep.
+                        // Enregistrer la gravité pour ce pas de temps.
                         projectileRegistry.add(particule, forces[ForceType::Gravity].get());
                 }
                 if (applyFrictionPhase1) {
-                        // Queue drag so fast projectiles eventually slow down.
+                        // Mettre la traînée en attente pour que les projectiles rapides finissent par ralentir.
                         projectileRegistry.add(particule, forces[ForceType::Friction].get());
                 }
         }
 
-        // Apply all queued forces before integrating.
+        // Appliquer toutes les forces en attente avant d'intégrer.
         projectileRegistry.updateForces(dt);
         projectileRegistry.clear();
 
         for (auto& projectile : projectiles) {
-                // Integrate each projectile using its internal routine.
+                // Intégrer chaque projectile via sa routine interne.
                 projectile.update(dt);
         }
 }
@@ -145,7 +145,7 @@ void ofApp::applyBlobMovementInput(float dt)
                 (movingDown ? 1.f : 0.f) - (movingUp ? 1.f : 0.f),
                 0.f);
 
-        // Delegate to the blob so it can translate the intent into forces.
+        // Déléguer au blob afin qu'il traduise l'intention en forces.
         blob.applyMovement(direction, dt);
 }
 
@@ -232,10 +232,10 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == OF_KEY_TAB) {
-                // Toggle between both demo scenes.
+                // Basculer entre les deux scènes de démonstration.
                 activeScene = (activeScene == SceneType::Phase1Projectiles) ? SceneType::Phase2Blob : SceneType::Phase1Projectiles;
                 if (activeScene == SceneType::Phase1Projectiles) {
-                        // Ensure lingering input does not keep moving the blob when we leave the scene.
+                        // S'assurer que les entrées restantes ne continuent pas de déplacer le blob lorsque l'on quitte la scène.
                         clearBlobMovementKeys();
                 }
         }
@@ -294,17 +294,17 @@ void ofApp::keyPressed(int key){
 
         if (key == 'r' || key == 'R') {
                 if (activeScene == SceneType::Phase1Projectiles) {
-                        // Clear every projectile and wait for the user to spawn new ones.
+                        // Supprimer tous les projectiles et attendre que l'utilisateur en crée de nouveaux.
                         projectiles.clear();
                 } else {
-                        // Rebuild the blob in its original layout.
+                        // Reconstruire le blob dans sa configuration d'origine.
                         blob.reset(blobBounds);
                 }
         }
 
         if (activeScene == SceneType::Phase2Blob) {
                 if (key == OF_KEY_BACKSPACE) {
-                        // Detach the next available particle when Backspace is pressed.
+                        // Détacher la prochaine particule disponible lorsque Retour arrière est pressé.
                         blob.detachPeripheralParticle();
                 }
                 if (key == OF_KEY_RETURN
@@ -312,7 +312,7 @@ void ofApp::keyPressed(int key){
                     || key == OF_KEY_ENTER
 #endif
                 ) {
-                        // Reconnect every detached particle when Enter is pressed.
+                        // Rattacher toutes les particules détachées lorsque Entrée est pressée.
                         blob.reattachAllParticles();
                 }
         }
@@ -360,7 +360,7 @@ void ofApp::setBlobMovementKey(int key, bool isPressed)
 
         switch (key) {
         case OF_KEY_LEFT:
-                // Arrow keys mirror the traditional WASD/ZQSD layout.
+                // Les flèches reproduisent la disposition WASD/ZQSD traditionnelle.
                 movingLeft = isPressed;
                 break;
         case OF_KEY_RIGHT:
@@ -378,7 +378,7 @@ void ofApp::setBlobMovementKey(int key, bool isPressed)
                 int lowered = std::tolower(static_cast<unsigned char>(key));
                 switch (lowered) {
                 case 'q':
-                        // Support AZERTY layout (ZQSD) while keeping QWERTY compatibility.
+                        // Gérer le clavier AZERTY (ZQSD) tout en restant compatible QWERTY.
                         movingLeft = isPressed;
                         break;
                 case 'd':

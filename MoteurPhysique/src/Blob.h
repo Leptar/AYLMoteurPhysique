@@ -19,55 +19,55 @@ class Blob
 public:
     Blob();
 
-    /// Configure the blob inside the given bounds.
+    /// Configure le blob à l'intérieur des limites fournies.
     void setup(const ofRectangle& bounds);
-    /// Reset all particles and rebuild the blob inside the bounds.
+    /// Réinitialise toutes les particules et reconstruit le blob dans ces limites.
     void reset(const ofRectangle& bounds);
-    /// Update the playable area without rebuilding the particles.
+    /// Met à jour la zone de jeu sans reconstruire les particules.
     void setBounds(const ofRectangle& bounds);
-    /// Integrate physics and handle collisions for the blob.
+    /// Intègre la physique et gère les collisions du blob.
     void update(float dt, bool useVerletIntegration, bool applyGravity, bool applyFriction, bool applySprings);
-    /// Draw the blob particles and optional spring visuals.
+    /// Dessine les particules du blob ainsi que les ressorts facultatifs.
     void draw(bool showSprings, bool highlightCollisions) const;
 
-    /// Apply player input forces to the central particle.
+    /// Applique les forces issues de l'entrée joueur sur la particule centrale.
     void applyMovement(const Vector3D& inputDirection, float dt);
-    /// Mark the next available peripheral particle as detached.
+    /// Marque la prochaine particule périphérique disponible comme détachée.
     bool detachPeripheralParticle();
-    /// Reconnect all previously detached particles.
+    /// Rattache toutes les particules précédemment détachées.
     void reattachAllParticles();
 
-    /// Total number of particles currently composing the blob.
+    /// Nombre total de particules composant actuellement le blob.
     std::size_t particleCount() const;
-    /// Number of particles currently colliding.
+    /// Nombre de particules actuellement en collision.
     std::size_t activeCollisionCount() const;
-    /// Sum of the mass of every particle in the blob.
+    /// Somme des masses de chaque particule du blob.
     float totalMass() const;
-    /// Cached gravitational potential energy of the blob.
+    /// Énergie potentielle gravitationnelle mise en cache pour le blob.
     float potentialEnergy() const;
 
 private:
-    /// Helper structure remembering which generator acts on which particles.
+    /// Structure utilitaire qui mémorise quel générateur agit sur quelles particules.
     struct SpringBinding {
         Particule* owner = nullptr;
         Particule* other = nullptr;
         ParticuleForceGenerator* generator = nullptr;
     };
 
-    /// Simplified representation of a spring for rendering purposes.
+    /// Représentation simplifiée d'un ressort utilisée pour l'affichage.
     struct SpringConnection {
         Particule* a = nullptr;
         Particule* b = nullptr;
         float restLength = 0.f;
     };
 
-    /// Allocate particles in a ring around the controllable center particle.
+    /// Place les particules en anneau autour de la particule centrale contrôlable.
     void buildBlob(const ofRectangle& bounds);
-    /// Queue the requested forces and integrate the motion of each particle.
+    /// Empile les forces demandées et intègre le mouvement de chaque particule.
     void applyForces(float dt, bool useVerletIntegration, bool applyGravity, bool applyFriction, bool applySprings);
-    /// Detect particle/plane overlaps and resolve them through the collision system.
+    /// Détecte les recouvrements particule/plan et les résout via le système de collision.
     void detectAndResolveCollisions();
-    /// Recompute the blob's gravitational potential energy cache.
+    /// Recalcule le cache d'énergie potentielle gravitationnelle du blob.
     void updatePotentialEnergy();
 
     ofRectangle playArea;

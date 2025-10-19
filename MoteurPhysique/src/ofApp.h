@@ -28,20 +28,20 @@ class ofApp : public ofBaseApp{
                 void dragEvent(ofDragInfo dragInfo);
                 void gotMessage(ofMessage msg);
         private:
-                /// Simple state machine identifying the active demo.
+                /// Machine à états simple qui identifie la démonstration active.
                 enum class SceneType { Phase1Projectiles, Phase2Blob };
 
-                /// Apply all configured forces to the active projectiles and integrate them.
+                /// Applique toutes les forces configurées aux projectiles actifs avant de les intégrer.
                 void updateProjectiles(float dt);
-                /// Draw helpers for each projectile in the first scene.
+                /// Dessine les repères pour chaque projectile de la première scène.
                 void drawProjectiles() const;
-                /// Render the debug HUD describing the current configuration.
+                /// Affiche le HUD de debug décrivant la configuration actuelle.
                 void drawHud() const;
-                /// Translate keyboard intent into a force request for the blob.
+                /// Traduit l'intention du clavier en une demande de force pour le blob.
                 void applyBlobMovementInput(float dt);
-                /// Track when blob movement keys are pressed or released.
+                /// Suit l'appui ou le relâchement des touches de déplacement du blob.
                 void setBlobMovementKey(int key, bool isPressed);
-                /// Reset all blob movement flags, typically when leaving the scene.
+                /// Réinitialise tous les indicateurs de déplacement du blob, typiquement lors d'un changement de scène.
                 void clearBlobMovementKeys();
 
                 std::vector<Projectile> projectiles;

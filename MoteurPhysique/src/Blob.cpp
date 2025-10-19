@@ -20,20 +20,20 @@ constexpr float kTwoPi = 6.28318530717958647692f;
 
 Blob::Blob()
 {
-    // Gravity and friction generators are shared by all particles in the blob.
+    // Les générateurs de gravité et de frottement sont partagés par toutes les particules du blob.
     gravity = std::make_unique<ForceGravity>();
     friction = std::make_unique<ForceFriction>();
 }
 
 void Blob::setup(const ofRectangle& bounds)
 {
-    // Initial creation of the blob layout inside the requested bounds.
+    // Création initiale de la disposition du blob à l'intérieur des limites demandées.
     buildBlob(bounds);
 }
 
 void Blob::reset(const ofRectangle& bounds)
 {
-    // Clear every runtime cache before rebuilding the blob from scratch.
+    // Vider tous les caches d'exécution avant de reconstruire le blob depuis zéro.
     centerParticle = nullptr;
     particles.clear();
     springGenerators.clear();
@@ -48,7 +48,7 @@ void Blob::reset(const ofRectangle& bounds)
 
 void Blob::setBounds(const ofRectangle& bounds)
 {
-    // Allow updating the play area (for example when resizing the window).
+    // Permet de mettre à jour la zone de jeu (par exemple lors du redimensionnement de la fenêtre).
     playArea = bounds;
 }
 
@@ -62,7 +62,7 @@ void Blob::buildBlob(const ofRectangle& bounds)
     float particleRadius = std::min(kParticleRadius, reach * 0.4f);
 
     auto createParticle = [&](const Vector3D& position) {
-        // Helper to centralize default particle creation.
+        // Utilitaire pour centraliser la création par défaut des particules.
         float mass = 1.0f;
         float linear = 0.15f;
         float quadratic = 0.01f;
@@ -92,7 +92,7 @@ void Blob::buildBlob(const ofRectangle& bounds)
         float restLength = (a->_pos - b->_pos).GetNorm();
         springConnections.push_back({a, b, restLength});
 
-        // Each logical spring is represented by two generators, one per direction.
+        // Chaque ressort logique est représenté par deux générateurs, un par direction.
         auto springAB = std::make_unique<ForceRessortParticule>(b, stiffness, restLength);
         springBindings.push_back({a, b, springAB.get()});
         springGenerators.push_back(std::move(springAB));
@@ -121,14 +121,14 @@ void Blob::applyForces(float dt, bool useVerletIntegration, bool applyGravity, b
 {
     if (applyGravity) {
         for (auto& particle : particles) {
-            // Defer gravity to the registry so the same generator instance can be reused.
+            // Reporter l'application de la gravité au registre afin de réutiliser la même instance de générateur.
             registry.add(particle.get(), gravity.get());
         }
     }
 
     if (applyFriction) {
         for (auto& particle : particles) {
-            // Friction is also queued through the registry for consistency.
+            // La force de frottement est également ajoutée au registre afin de conserver la cohérence.
             registry.add(particle.get(), friction.get());
         }
     }
@@ -137,7 +137,7 @@ void Blob::applyForces(float dt, bool useVerletIntegration, bool applyGravity, b
         for (const SpringBinding& binding : springBindings) {
             if (!binding.owner || !binding.other)
                 continue;
-            // Skip springs that involve a detached particle.
+            // Ignorer les ressorts qui impliquent une particule détachée.
             if (detachedParticles.find(binding.owner) != detachedParticles.end())
                 continue;
             if (detachedParticles.find(binding.other) != detachedParticles.end())
@@ -148,14 +148,14 @@ void Blob::applyForces(float dt, bool useVerletIntegration, bool applyGravity, b
     }
 
     if (!particles.empty()) {
-        // Apply every queued force in one pass, then clear the registry for the next frame.
+        // Appliquer toutes les forces mises en attente en une seule passe, puis vider le registre pour l'image suivante.
         registry.updateForces(dt);
         registry.clear();
     }
 
     for (auto& particle : particles) {
         if (useVerletIntegration) {
-            // Verlet integration provides better stability for spring systems.
+            // L'intégration de Verlet offre une meilleure stabilité pour les systèmes à ressorts.
             particle->integrerVerlet(dt);
         } else {
             particle->integrerEuler(dt);
@@ -173,7 +173,7 @@ void Blob::detectAndResolveCollisions()
         for (std::size_t j = i + 1; j < particles.size(); ++j) {
             Particule* b = particles[j].get();
             if (SystemCollisionDetection::IsColliding(a, b)) {
-                // Register sphere-sphere contacts with a slight restitution so the blob bounces.
+                // Enregistrer les contacts sphère-sphère avec un léger rebond pour que le blob rebondisse.
                 collisionSystem.add(a, b, 0.25f, CollisionType::Contact);
                 collidingParticles.insert(a);
                 collidingParticles.insert(b);
@@ -185,7 +185,7 @@ void Blob::detectAndResolveCollisions()
         Particule* p = particle.get();
 
         if (p->_pos.y > playArea.getBottom()) {
-            // Push particles back inside the playable box using virtual planes.
+            // Repousser les particules à l'intérieur de l'aire de jeu grâce à des plans virtuels.
             collisionSystem.addPlane(p, Vector3D(0.f, -1.f, 0.f), p->_pos.y - playArea.getBottom(), 0.25f, CollisionType::Resting);
             collidingParticles.insert(p);
         }
@@ -206,7 +206,7 @@ void Blob::detectAndResolveCollisions()
         }
     }
 
-    // Resolve all accumulated contacts and constraints in a single sweep.
+    // Résoudre tous les contacts et contraintes accumulés en une seule passe.
     collisionSystem.resolveAll();
 }
 
@@ -309,11 +309,11 @@ void Blob::applyMovement(const Vector3D& inputDirection, float dt)
         float safeDt = std::max(dt, 0.0001f);
         float impulse = kMovementImpulse * centerParticle->masse;
         Vector3D force = direction.scalar(impulse / safeDt);
-        // Apply an impulse-equivalent force so the central particle accelerates smoothly.
+        // Appliquer une force équivalente à une impulsion pour que la particule centrale accélère en douceur.
         centerParticle->addForce(force);
     } else {
         Vector3D brakeForce = centerParticle->_vel.scalar(-kMovementBrake * centerParticle->masse);
-        // Apply a soft brake when no input is provided to keep the blob controllable.
+        // Appliquer un freinage doux en l'absence d'entrée pour garder le blob contrôlable.
         centerParticle->addForce(brakeForce);
     }
 }
@@ -330,7 +330,7 @@ bool Blob::detachPeripheralParticle()
         if (detachedParticles.find(p) != detachedParticles.end())
             continue;
 
-        // Remember the particle as detached so springs and rendering skip it.
+        // Enregistrer la particule comme détachée afin que les ressorts et l'affichage l'ignorent.
         detachedParticles.insert(p);
         return true;
     }

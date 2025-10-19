@@ -4,12 +4,12 @@
 class SystemCollisionResolve
 {
 public:
-    /// Resolve a standard contact by applying an impulse and positional correction.
+    /// Résout un contact standard en appliquant une impulsion et une correction de position.
     static void resolve(const Collision& collision);
-    /// Enforce distance constraints such as springs by projecting particles apart.
+    /// Fait respecter les contraintes de distance comme les ressorts en projetant les particules.
     static void resolveConstraint(const Collision& collision);
 
 private:
-    /// Separate two overlapping bodies using their contact normal and inverse masses.
+    /// Sépare deux corps qui se chevauchent en utilisant leur normale de contact et leurs masses inverses.
     static void seperate(const Collision& collision);
 };
