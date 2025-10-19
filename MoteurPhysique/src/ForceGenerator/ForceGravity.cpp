@@ -1,7 +1,7 @@
 #include "ForceGravity.h"
 
 ForceGravity::ForceGravity() {
-	Gravity = Vector3D(0, 98.1f, 0);
+	Gravity = Vector3D(0, 981.f, 0);
 }
 
 void ForceGravity::UpdateForce(Particule* particule, float dt) {
