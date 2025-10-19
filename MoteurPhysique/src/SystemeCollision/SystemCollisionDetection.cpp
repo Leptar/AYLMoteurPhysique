@@ -4,12 +4,31 @@
 
 void SystemCollisionDetection::add(Particule* p1, Particule* p2, float restitution, CollisionType type)
 {
+    if (p1 == nullptr || p2 == nullptr)
+        return;
+
     float penetration = p1->rayonCollision + p2->rayonCollision - (p1->_pos - p2->_pos).GetNorm();
-    
+    if (penetration <= 0.f)
+        return;
+
     Vector3D directionCollision = (p1->_pos - p2->_pos).normalize();
-    detectedCollisions.push_back(
-        {p1, p2, directionCollision, penetration, restitution, type}
-        );
+    detectedCollisions.push_back({p1, p2, directionCollision, penetration, restitution, type});
+}
+
+void SystemCollisionDetection::addPlane(Particule* p1, const Vector3D& normal, float penetration, float restitution, CollisionType type)
+{
+    if (p1 == nullptr || penetration <= 0.f)
+        return;
+
+    Collision collision;
+    collision.p1 = p1;
+    collision.p2 = nullptr;
+    collision.contactNormal = normal;
+    collision.penetration = penetration;
+    collision.restitution = restitution;
+    collision.type = type;
+
+    detectedCollisions.push_back(collision);
 }
 
 void SystemCollisionDetection::remove(const Collision& collision)
@@ -21,14 +40,9 @@ void SystemCollisionDetection::remove(const Collision& collision)
     }
 }
 
-bool SystemCollisionDetection::clear()
-{
-   return detectedCollisions.empty();
-}
-
 void SystemCollisionDetection::resolveAll()
 {
-    for (Collision collision : detectedCollisions)
+    for (const Collision& collision : detectedCollisions)
     {
         switch (collision.type)
         {
@@ -43,6 +57,23 @@ void SystemCollisionDetection::resolveAll()
             break;
         }
     }
+
+    detectedCollisions.clear();
+}
+
+bool SystemCollisionDetection::empty() const
+{
+    return detectedCollisions.empty();
+}
+
+void SystemCollisionDetection::clear()
+{
+    detectedCollisions.clear();
+}
+
+std::size_t SystemCollisionDetection::count() const
+{
+    return detectedCollisions.size();
 }
 
 bool SystemCollisionDetection::IsColliding(Particule* p1, Particule* p2)

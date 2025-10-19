@@ -26,9 +26,12 @@ public:
     std::vector<Collision> detectedCollisions;
 
     void add(Particule* p1, Particule* p2, float restitution, CollisionType type);
+    void addPlane(Particule* p1, const Vector3D& normal, float penetration, float restitution, CollisionType type);
     void remove(const Collision& collision);
-    bool clear();
+    bool empty() const;
+    void clear();
     void resolveAll();
+    std::size_t count() const;
     static bool IsColliding(Particule* p1, Particule* p2);
     void addRodConstraint(Particule* p1, Particule* p2, float length);
     void addCableConstraint(Particule* p1, Particule* p2, float maxLength, float restitution);
