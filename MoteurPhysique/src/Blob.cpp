@@ -10,6 +10,7 @@ constexpr float kGravity = 980.0f;
 constexpr float kAirDrag = 4.5f;
 constexpr float kBoundaryBounce = 0.35f;
 constexpr float kMaxVelocity = 900.0f;
+constexpr float kSizeScale = 0.2f;
 }
 
 Blob::Blob() = default;
@@ -34,7 +35,7 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     particles.reserve(outerCount + 1);
     links.reserve(outerCount * 2);
 
-    const float outerRadius = radius * 0.5f;
+    const float outerRadius = radius * 0.5f * kSizeScale;
     particleRadius = outerRadius * 0.06f;
 
     // Centre du blob
@@ -291,7 +292,7 @@ void Blob::update(float dt) {
 void Blob::draw() const {
     ofPushStyle();
 
-    ofSetLineWidth(1.5f);
+    ofSetLineWidth(1.5f * kSizeScale);
     ofSetColor(90, 120, 255, 120);
     for (const auto& link : links) {
         if (!link.active) {
@@ -423,7 +424,7 @@ void Blob::split() {
     }
 
     const float dt = 1.0f / 60.0f;
-    const float impulse = 140.0f;
+    const float impulse = 140.0f * kSizeScale;
     for (std::size_t idx : leftHalf) {
         if (idx >= particles.size()) {
             continue;
