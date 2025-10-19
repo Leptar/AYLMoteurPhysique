@@ -23,7 +23,6 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     rightHalf.clear();
     cachedAttachedCount = 0;
     splitActive = false;
-    particleRadius = radius * 0.07f;
 
     if (outerCount < 4) {
         outerCount = 4;
@@ -35,13 +34,15 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     particles.reserve(outerCount + 1);
     links.reserve(outerCount * 2);
 
+    const float outerRadius = radius * 0.5f;
+    particleRadius = outerRadius * 0.06f;
+
     // Centre du blob
     particles.emplace_back(std::make_unique<Particule>(center, Vector3D(0, 0, 0), Vector3D(0, 0, 0), 1.5f));
     particles.back()->rayonCollision = particleRadius;
     particles.back()->clearForce();
     rootIndex = 0;
 
-    const float outerRadius = radius;
     const float angleStep = static_cast<float>(TWO_PI / outerCount);
 
     for (std::size_t i = 0; i < outerCount; ++i) {
