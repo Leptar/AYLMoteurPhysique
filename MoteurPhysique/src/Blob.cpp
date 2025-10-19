@@ -64,12 +64,12 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     }
 
     const float ringRest = 2.0f * outerRadius * std::sin(angleStep * 0.5f);
-    const float ringMax = ringRest * 1.25f;
+    const float ringMax = ringRest * 1.12f;
     const float ringStiffness = 240.0f;
     const float ringCable = ringStiffness * 1.2f;
 
     const float spokeRest = outerRadius;
-    const float spokeMax = spokeRest * 1.2f;
+    const float spokeMax = spokeRest * 1.08f;
     const float spokeStiffness = 320.0f;
     const float spokeCable = spokeStiffness * 1.3f;
 
