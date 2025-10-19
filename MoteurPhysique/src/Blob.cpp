@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace {
 constexpr float kCoreSpringStiffness = 6.0f;
@@ -238,9 +239,17 @@ std::size_t Blob::activeCollisionCount() const
     return collidingParticles.size();
 }
 
-void Blob::nudge(const Vector3D& impulse)
+void Blob::nudge(const Vector3D& impulse, float intensity)
 {
-    Vector3D scaledImpulse = impulse.scalar(kImpulseScale);
+    if (particles.empty() || intensity <= 0.f)
+        return;
+
+    float magnitude = std::sqrt(impulse.x * impulse.x + impulse.y * impulse.y + impulse.z * impulse.z);
+    if (magnitude <= std::numeric_limits<float>::epsilon())
+        return;
+
+    Vector3D direction = impulse.scalar(1.f / magnitude);
+    Vector3D scaledImpulse = direction.scalar(kImpulseScale * intensity);
 
     for (auto& particle : particles) {
         particle->_vel = particle->_vel + scaledImpulse;

@@ -5,6 +5,8 @@
 #include "Tests/3DVectorTest.h"
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <sstream>
 
 namespace {
@@ -65,6 +67,7 @@ void ofApp::update(){
                 updateProjectiles(dt);
                 break;
         case SceneType::Phase2Blob:
+                applyBlobMovementInput(dt);
                 blob.update(dt, useVerletBlob, applyGravityBlob, applyFrictionBlob, applySpringsBlob);
                 break;
         }
@@ -118,6 +121,32 @@ void ofApp::drawProjectiles() const
         for (const auto& projectile : projectiles) {
                 projectile.draw();
         }
+}
+
+//--------------------------------------------------------------
+void ofApp::applyBlobMovementInput(float dt)
+{
+        if (!(movingLeft || movingRight || movingUp || movingDown))
+                return;
+
+        if (dt <= 0.f)
+                return;
+
+        Vector3D direction(
+                (movingRight ? 1.f : 0.f) - (movingLeft ? 1.f : 0.f),
+                (movingDown ? 1.f : 0.f) - (movingUp ? 1.f : 0.f),
+                0.f);
+
+        float magnitude = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+        if (magnitude <= std::numeric_limits<float>::epsilon())
+                return;
+
+        direction = direction.scalar(1.f / magnitude);
+        float intensity = std::clamp(dt * 60.f, 0.f, 3.f);
+        if (intensity <= 0.f)
+                return;
+
+        blob.nudge(direction, intensity);
 }
 
 //--------------------------------------------------------------
@@ -202,10 +231,14 @@ void ofApp::keyPressed(int key){
 
         if (key == OF_KEY_TAB) {
                 activeScene = (activeScene == SceneType::Phase1Projectiles) ? SceneType::Phase2Blob : SceneType::Phase1Projectiles;
+                if (activeScene == SceneType::Phase1Projectiles) {
+                        clearBlobMovementKeys();
+                }
         }
 
         if (key == 'p' || key == 'P') {
                 activeScene = SceneType::Phase1Projectiles;
+                clearBlobMovementKeys();
         }
         if (key == 'b' || key == 'B') {
                 activeScene = SceneType::Phase2Blob;
@@ -263,20 +296,7 @@ void ofApp::keyPressed(int key){
                 }
         }
 
-        if (activeScene == SceneType::Phase2Blob) {
-                if (key == OF_KEY_LEFT || key == 'q' || key == 'Q') {
-                        blob.nudge(Vector3D(-1.f, 0.f, 0.f));
-                }
-                if (key == OF_KEY_RIGHT || key == 'd' || key == 'D') {
-                        blob.nudge(Vector3D(1.f, 0.f, 0.f));
-                }
-                if (key == OF_KEY_UP || key == 'z' || key == 'Z') {
-                        blob.nudge(Vector3D(0.f, -1.f, 0.f));
-                }
-                if (key == OF_KEY_DOWN || key == 's' || key == 'S') {
-                        blob.nudge(Vector3D(0.f, 1.f, 0.f));
-                }
-        }
+        setBlobMovementKey(key, true);
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 if (key == '1') {
@@ -308,7 +328,45 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
+        setBlobMovementKey(key, false);
+}
 
+//--------------------------------------------------------------
+void ofApp::setBlobMovementKey(int key, bool isPressed)
+{
+        switch (key) {
+        case OF_KEY_LEFT:
+                movingLeft = isPressed;
+                break;
+        case OF_KEY_RIGHT:
+                movingRight = isPressed;
+                break;
+        case OF_KEY_UP:
+                movingUp = isPressed;
+                break;
+        case OF_KEY_DOWN:
+                movingDown = isPressed;
+                break;
+        }
+
+        if (key == 'q' || key == 'Q') {
+                movingLeft = isPressed;
+        } else if (key == 'd' || key == 'D') {
+                movingRight = isPressed;
+        } else if (key == 'z' || key == 'Z') {
+                movingUp = isPressed;
+        } else if (key == 's' || key == 'S') {
+                movingDown = isPressed;
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::clearBlobMovementKeys()
+{
+        movingLeft = false;
+        movingRight = false;
+        movingUp = false;
+        movingDown = false;
 }
 
 //--------------------------------------------------------------

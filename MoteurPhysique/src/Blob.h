@@ -25,7 +25,7 @@ public:
     void update(float dt, bool useVerletIntegration, bool applyGravity, bool applyFriction, bool applySprings);
     void draw(bool showSprings, bool highlightCollisions) const;
 
-    void nudge(const Vector3D& impulse);
+    void nudge(const Vector3D& impulse, float intensity = 1.f);
 
     std::size_t particleCount() const;
     std::size_t activeCollisionCount() const;

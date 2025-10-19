@@ -33,6 +33,9 @@ class ofApp : public ofBaseApp{
                 void updateProjectiles(float dt);
                 void drawProjectiles() const;
                 void drawHud() const;
+                void applyBlobMovementInput(float dt);
+                void setBlobMovementKey(int key, bool isPressed);
+                void clearBlobMovementKeys();
 
                 std::vector<Projectile> projectiles;
                 std::map<ProjectileType, ProjectileConfig> projectileConfigs;
@@ -56,6 +59,11 @@ class ofApp : public ofBaseApp{
                 bool showHud = true;
                 bool showSprings = true;
                 bool highlightCollisions = true;
+
+                bool movingLeft = false;
+                bool movingRight = false;
+                bool movingUp = false;
+                bool movingDown = false;
 
                 float lastDeltaTime = 0.f;
 
