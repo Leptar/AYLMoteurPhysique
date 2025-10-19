@@ -11,6 +11,7 @@ constexpr float kAirDrag = 4.5f;
 constexpr float kBoundaryBounce = 0.35f;
 constexpr float kMaxVelocity = 900.0f;
 constexpr float kSizeScale = 0.2f;
+constexpr float kOuterRadiusFactor = 0.4f;
 }
 
 Blob::Blob() = default;
@@ -35,7 +36,7 @@ void Blob::setup(const Vector3D& center, float radius, std::size_t outerCount) {
     particles.reserve(outerCount + 1);
     links.reserve(outerCount * 2);
 
-    const float outerRadius = radius * 0.5f * kSizeScale;
+    const float outerRadius = radius * kOuterRadiusFactor * kSizeScale;
     particleRadius = outerRadius * 0.06f;
 
     // Centre du blob
