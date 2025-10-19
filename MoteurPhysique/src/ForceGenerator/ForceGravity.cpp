@@ -5,8 +5,14 @@ ForceGravity::ForceGravity() {
 }
 
 void ForceGravity::UpdateForce(Particule* particule, float dt) {
-	float masse = 1.f/particule->_inverseMasse;
-	if (masse != 0.0f) {
-		particule->addForce(Gravity.scalar(masse));
-	}
+        if (particule == nullptr) {
+                return;
+        }
+
+        if (particule->_inverseMasse <= 0.0f) {
+                return;
+        }
+
+        float masse = 1.0f / particule->_inverseMasse;
+        particule->addForce(Gravity.scalar(masse));
 }

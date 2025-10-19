@@ -5,20 +5,27 @@ void ParticuleForceRegistry::add(Particule* particule, ParticuleForceGenerator* 
 }
 
 void ParticuleForceRegistry::remove(Particule* particule, ParticuleForceGenerator* fg) {
-	for (auto it = registre.begin(); it != registre.end(); it++) {
-		if (it->particule == particule && it->fg == fg) {
-			registre.erase(it);
-		}
-	}
+        for (auto it = registre.begin(); it != registre.end(); ++it) {
+                if (it->particule == particule && it->fg == fg) {
+                        registre.erase(it);
+                        break;
+                }
+        }
 }
 
 bool ParticuleForceRegistry::clear() {
-	return registre.empty();
+        if (registre.empty()) {
+                return false;
+        }
+        registre.clear();
+        return true;
 }
 
 void ParticuleForceRegistry::updateForces(float dt) {
 
-	for (ParticuleForceRegistration x : registre) {
-		x.fg->UpdateForce(x.particule, dt);
-	}
+        for (const ParticuleForceRegistration& x : registre) {
+                if (x.fg != nullptr && x.particule != nullptr) {
+                        x.fg->UpdateForce(x.particule, dt);
+                }
+        }
 }

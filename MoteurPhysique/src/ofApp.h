@@ -1,14 +1,23 @@
 #pragma once
 
-#include "ForceGenerator/ParticuleForceRegistry.h"
-#include "ofMain.h"
+#include <map>
+#include <memory>
+#include <vector>
+
+#include "3DVector.h"
 #include "Projectile.h"
+#include "World.h"
+#include "ofMain.h"
+
+#include "ForceGenerator/ForceFriction.h"
+#include "ForceGenerator/ForceGravity.h"
+#include "ForceGenerator/ParticuleForceRegistry.h"
 
 class ofApp : public ofBaseApp{
 
-	public:
-		void setup();
-		void update();
+        public:
+                void setup();
+                void update();
 		void draw();
 
 		void keyPressed(int key);
@@ -19,15 +28,35 @@ class ofApp : public ofBaseApp{
 		void mouseReleased(int x, int y, int button);
 		void mouseEntered(int x, int y);
 		void mouseExited(int x, int y);
-		void windowResized(int w, int h);
-		void dragEvent(ofDragInfo dragInfo);
-		void gotMessage(ofMessage msg);
-	private:
-		std::vector<Projectile> projectiles;
-		std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+                void windowResized(int w, int h);
+                void dragEvent(ofDragInfo dragInfo);
+                void gotMessage(ofMessage msg);
+        private:
+                enum class Level { Projectiles, Blob };
 
-		ParticuleForceRegistry* registreClass = nullptr;
-		std::map<ForceType, ParticuleForceGenerator*> Forces;
+                void updateProjectiles(float dt);
+                void drawProjectiles() const;
+                void updateBlob(float dt);
+                void drawBlob() const;
+                void rebuildBlobObstacles(int width, int height);
+                void toggleLevel();
 
-		uint64_t lastTime = 0;
+                World world;
+                std::vector<ofRectangle> blobObstacles;
+                uint64_t lastTime = 0;
+                bool moveUp = false;
+                bool moveDown = false;
+                bool moveLeft = false;
+                bool moveRight = false;
+
+                float hudDisplacement = 0.0f;
+                float hudVelocity = 0.0f;
+                std::size_t hudDisplayedCount = 0;
+                float lastDeltaTime = 0.0f;
+
+                Level currentLevel = Level::Projectiles;
+                std::map<ProjectileType, ProjectileConfig> projectileConfigs;
+                std::vector<Projectile> projectiles;
+                std::unique_ptr<ParticuleForceRegistry> registreClass;
+                std::map<ForceType, std::unique_ptr<ParticuleForceGenerator>> forces;
 };

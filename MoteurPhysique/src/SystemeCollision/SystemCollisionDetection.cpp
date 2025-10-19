@@ -1,12 +1,32 @@
 #include "SystemCollisionDetection.h"
 
+#include <cmath>
+
 #include "SystemCollisionResolve.h"
+
+namespace {
+constexpr float kLengthEpsilon = 1e-5f;
+}
 
 void SystemCollisionDetection::add(Particule* p1, Particule* p2, float restitution, CollisionType type)
 {
-    float penetration = p1->rayonCollision + p2->rayonCollision - (p1->_pos - p2->_pos).GetNorm();
-    
-    Vector3D directionCollision = (p1->_pos - p2->_pos).normalize();
+    if (p1 == nullptr || p2 == nullptr) {
+        return;
+    }
+
+    Vector3D delta = p1->_pos - p2->_pos;
+    float distance = delta.GetNorm();
+    float penetration = p1->rayonCollision + p2->rayonCollision - distance;
+
+    if (penetration <= kLengthEpsilon) {
+        return;
+    }
+
+    Vector3D directionCollision(0.0f, 1.0f, 0.0f);
+    if (distance > kLengthEpsilon) {
+        directionCollision = delta.scalar(1.0f / distance);
+    }
+
     detectedCollisions.push_back(
         {p1, p2, directionCollision, penetration, restitution, type}
         );
@@ -14,16 +34,21 @@ void SystemCollisionDetection::add(Particule* p1, Particule* p2, float restituti
 
 void SystemCollisionDetection::remove(const Collision& collision)
 {
-    for (auto it = detectedCollisions.begin(); it != detectedCollisions.end(); it++) {
+    for (auto it = detectedCollisions.begin(); it != detectedCollisions.end(); ++it) {
         if (it->equal(collision.p1, collision.p2)) {
             detectedCollisions.erase(it);
+            break;
         }
     }
 }
 
 bool SystemCollisionDetection::clear()
 {
-   return detectedCollisions.empty();
+   if (detectedCollisions.empty()) {
+       return false;
+   }
+   detectedCollisions.clear();
+   return true;
 }
 
 void SystemCollisionDetection::resolveAll()
@@ -47,19 +72,33 @@ void SystemCollisionDetection::resolveAll()
 
 bool SystemCollisionDetection::IsColliding(Particule* p1, Particule* p2)
 {
+    if (p1 == nullptr || p2 == nullptr) {
+        return false;
+    }
+
     float distance = (p1->_pos - p2->_pos).GetNorm();
     float accumRayon = p1->rayonCollision + p2->rayonCollision;
 
-    return distance <= accumRayon;
+    return distance <= accumRayon + kLengthEpsilon;
 }
 
 void SystemCollisionDetection::addRodConstraint(Particule* p1, Particule* p2, float length)
 {
+    if (p1 == nullptr || p2 == nullptr) {
+        return;
+    }
+
     Vector3D delta = p2->_pos - p1->_pos;
     float currentLength = delta.GetNorm();
 
-    if (currentLength == length)
+    if (currentLength <= kLengthEpsilon) {
+        return;
+    }
+
+    float lengthDelta = currentLength - length;
+    if (std::fabs(lengthDelta) <= kLengthEpsilon) {
         return; // pas de collision, la tige est à sa longueur idéale
+    }
 
     Collision c;
     c.p1 = p1;
@@ -67,12 +106,12 @@ void SystemCollisionDetection::addRodConstraint(Particule* p1, Particule* p2, fl
     c.type = CollisionType::Rod;
     c.restitution = 0.0f;
 
-    if (currentLength > length) {
-        c.contactNormal = delta.normalize();
-        c.penetration = currentLength - length;
+    if (lengthDelta > 0.0f) {
+        c.contactNormal = delta.scalar(1.0f / currentLength);
+        c.penetration = lengthDelta;
     } else {
-        c.contactNormal = delta.normalize().scalar(-1);
-        c.penetration = length - currentLength;
+        c.contactNormal = delta.scalar(-1.0f / currentLength);
+        c.penetration = -lengthDelta;
     }
 
     detectedCollisions.push_back(c);
@@ -81,10 +120,18 @@ void SystemCollisionDetection::addRodConstraint(Particule* p1, Particule* p2, fl
 
 void SystemCollisionDetection::addCableConstraint(Particule* p1, Particule* p2, float maxLength, float restitution)
 {
+    if (p1 == nullptr || p2 == nullptr) {
+        return;
+    }
+
     Vector3D delta = p2->_pos - p1->_pos;
     float currentLength = delta.GetNorm();
 
-    if (currentLength < maxLength)
+    if (currentLength <= kLengthEpsilon) {
+        return;
+    }
+
+    if (currentLength <= maxLength + kLengthEpsilon)
         return; // le câble est détendu, aucune collision
 
     Collision c;
@@ -92,7 +139,7 @@ void SystemCollisionDetection::addCableConstraint(Particule* p1, Particule* p2, 
     c.p2 = p2;
     c.type = CollisionType::Cable;
     c.restitution = restitution;
-    c.contactNormal = delta.normalize();
+    c.contactNormal = delta.scalar(1.0f / currentLength);
     c.penetration = currentLength - maxLength;
 
     detectedCollisions.push_back(c);
