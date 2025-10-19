@@ -71,7 +71,7 @@ void SystemCollisionDetection::addRodConstraint(Particule* p1, Particule* p2, fl
         c.contactNormal = delta.normalize();
         c.penetration = currentLength - length;
     } else {
-        c.contactNormal = -delta.normalize();
+        c.contactNormal = delta.normalize().scalar(-1);
         c.penetration = length - currentLength;
     }
 
