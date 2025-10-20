@@ -19,8 +19,8 @@ public:
 
 	std::vector<ParticuleForceRegistration> registre;
 
-	void add(Particule* particule, ParticuleForceGenerator* fg);
-	void remove(Particule* particule, ParticuleForceGenerator* fg);
-	bool clear();
-	void updateForces(float dt);
+        void add(Particule* particule, ParticuleForceGenerator* fg);
+        void remove(Particule* particule, ParticuleForceGenerator* fg);
+        void clear();
+        void updateForces(float dt);
 };

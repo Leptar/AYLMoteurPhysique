@@ -6,7 +6,7 @@
 
 Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const Vector3D& position)
 {
-    particule = new Particule(
+    particule = std::make_unique<Particule>(
         position,
         config.vitesseInitiale,
         Vector3D(0, 0, 0),
@@ -21,6 +21,9 @@ Projectile::Projectile(ProjectileType T, const ProjectileConfig& config, const V
 
 void Projectile::update(float deltaTime)
 {
+    if (!particule)
+        return;
+
     particule->integrerEuler(deltaTime);
     Vector3D pos = particule->_pos;
     trajectoire.emplace_back(pos.x, pos.y, pos.z);
