@@ -43,8 +43,7 @@ public:
     std::size_t activeCollisionCount() const;
     /// Somme des masses de chaque particule du blob.
     float totalMass() const;
-    /// Énergie potentielle gravitationnelle mise en cache pour le blob.
-    float potentialEnergy() const;
+
 
 private:
     /// Structure utilitaire qui mémorise quel générateur agit sur quelles particules.
