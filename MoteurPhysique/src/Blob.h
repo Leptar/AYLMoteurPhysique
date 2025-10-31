@@ -1,6 +1,6 @@
 #pragma once
 
-#include "3DVector.h"
+#include "MathStruct/3DVector.h"
 #include "ForceGenerator/ForceFriction.h"
 #include "ForceGenerator/ForceGravity.h"
 #include "ForceGenerator/ForceRessortParticule.h"

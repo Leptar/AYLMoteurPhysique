@@ -1,7 +1,7 @@
 #ifndef PARTICULE_H
 #define PARTICULE_H
 
-#include "3DVector.h"
+#include "MathStruct/3DVector.h"
 
 class Particule {
 public:
