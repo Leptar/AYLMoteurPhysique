@@ -1,73 +1,22 @@
-#include <utf8/unchecked.h>
-#include "3DVectorTest.h"
 #include "3DVector.h"
 #include "Particule.h"
 
 Particule::Particule(Vector3D pos,
                      Vector3D vel,
-                     Vector3D force, 
-                     float masse)
-    : _pos(pos), 
-      _vel(vel), 
-      _force(force) 
+                     Vector3D force,
+                     float masse,
+                     float linear,
+                     float quadratic,
+                     float rayonCollision)
+    : _pos(pos),
+      _vel(vel),
+      _acc(force),
+      masse(masse),
+	  linearFriction(linear),
+	  quadraticFriction(quadratic),
+      rayonCollision(rayonCollision)
 {
     _oldPos = _pos - _vel.scalar(0.016f); // 60fps
-    setMasse(masse);
-}
-
-Vector3D Particule::getOldPos() const {
-    return _oldPos;
-}
-
-Vector3D Particule::getPos() const {
-    return _pos;
-}
-
-Vector3D Particule::getVx() const {
-    return _vel;
-}
-
-Vector3D Particule::getForce() const {
-    return _force;
-}
-
-float Particule::getInverseMasse() const {
-    return _inverseMasse;
-}
-
-void Particule::setOldPosition(float px, float py, float pz) {
-    _oldPos = Vector3D(px, py, pz);
-}
-
-void Particule::setOldPosition(Vector3D oldPos) {
-    _oldPos = oldPos;
-}
-
-void Particule::setPosition(float px, float py, float pz) {
-    _pos = Vector3D(px, py, pz);
-}
-
-void Particule::setPosition(Vector3D pos) {
-    _pos = pos;
-}
-
-void Particule::setVitesse(float vx, float vy, float vz) {
-    _vel = Vector3D(vx, vy, vz);
-}
-
-void Particule::setVitesse(Vector3D vel) {
-    _vel = vel;
-}
-
-void Particule::setForce(float ax, float ay, float az) {
-    _force = Vector3D(ax, ay, az);
-}
-
-void Particule::setForce(Vector3D force) {
-    _force = force;
-}
-
-void Particule::setMasse(float masse) {
     if (masse <= 0.0f) {
         _inverseMasse = 0.0f;
     } else {
@@ -75,27 +24,33 @@ void Particule::setMasse(float masse) {
     }
 }
 
-/*void Particule::integrerVerlet(float dt) {
-    if (_inverseMasse <= 0.0f) return; 
-
-    const float damping = 0.7f; 
-    Vector3D acc = _force.scalar(_inverseMasse);
-    Vector3D newPos = _pos.scalar(2.f) - _oldPos + acc.scalar(std::pow(dt,2));
-
-    _oldPos = _pos;
-    _pos = newPos;
-    _vel = _vel.scalar(damping) + acc.scalar(dt);  
-}*/
-
 void Particule::integrerVerlet(float dt) {
     if (_inverseMasse <= 0.0f) return;
 
     const float damping = 0.99f; // proche de 1.0 pour pas tuer la dynamique
-    Vector3D acc = _force.scalar(_inverseMasse);
+    Vector3D acc = AccumForce.scalar(_inverseMasse);
 
     Vector3D temp = _pos;
     _pos = _pos + (_pos - _oldPos).scalar(damping) + acc.scalar(dt * dt);
     _oldPos = temp;
 
     _vel = (_pos - _oldPos).scalar(1.f/dt); // vitesse dérivée des positions
+	clearForce();
+}
+
+void Particule::addForce(const Vector3D & Force) {
+	AccumForce = AccumForce + Force;
+}
+
+void Particule::clearForce() {
+	AccumForce = Vector3D(0, 0, 0);
+}
+
+void Particule::integrerEuler(float dt) {
+
+	_acc = AccumForce.scalar(_inverseMasse);
+	_vel = _vel + _acc.scalar(dt);
+	_pos = _pos + _vel.scalar(dt);
+
+	clearForce();
 }

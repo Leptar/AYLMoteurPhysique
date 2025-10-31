@@ -38,11 +38,12 @@ Vector3D Vector3D::operator-(const Vector3D &v) const {
 }
 
 Vector3D Vector3D::normalize() {
+	Vector3D v;
     float norm = GetNorm();
-    x = x / norm;
-    y = y / norm;
-    z = z / norm;
-    return *this;
+	v.x = x / norm;
+	v.y = y / norm;
+	v.z = z / norm;
+    return v;
 }
 
 float Vector3D::dot(const Vector3D &v) const {

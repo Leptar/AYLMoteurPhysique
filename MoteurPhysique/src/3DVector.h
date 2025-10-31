@@ -26,7 +26,6 @@ public:
     float GetNorm();
     float GetSquareNorm();
 
-public:
     float x, y, z;
 };
 
