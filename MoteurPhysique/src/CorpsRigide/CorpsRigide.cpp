@@ -112,6 +112,7 @@ void CorpsRigide::integrer(float deltaTime)
 /**
  * @brief Met à jour la matrice de transformation 4x4 (pour le rendu)
  * en combinant l'orientation et la position actuelles.
+ * Pour l'afficher dans le jeu de tir ballistique
  */
 void CorpsRigide::_updateTransformMatrix()
 {
@@ -130,6 +131,7 @@ void CorpsRigide::_updateTransformMatrix()
 /**
  * @brief Met à jour le tenseur d'inertie inverse 3x3 (pour la physique)
  * en le pivotant dans le système de coordonnées du monde.
+ * à utiliser avec le torque (m_torqueAccum) pour calculer l'accélération angulaire
  */
 void CorpsRigide::_updateInverseInertiaTensorWorld()
 {
