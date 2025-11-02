@@ -29,6 +29,7 @@ private:
     Matrix4 m_transformMatrix;
     Matrix3 m_inverseInertiaTensorWorld;
 
+    // Pour chaque frame
     void _updateTransformMatrix();
     void _updateInverseInertiaTensorWorld();
 
@@ -50,10 +51,11 @@ public:
     const Matrix4& getTransformMatrix();
 
     // Gestion des forces et torques
-    void addForce(const Vector3D& force);
-    void addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint);
-    void addForceAtBodyPoint(const Vector3D& force, const Vector3D& bodyPoint);
+    void addForce(const Vector3D& force); // Centre de masse
+    void addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint); // Coordonnées dans le monde
+    void addForceAtBodyPoint(const Vector3D& force, const Vector3D& bodyPoint); // Sur un point précis du corps
     void clearAccumulators();
 
+    // Integrer
     void integrer(float deltaTime);
 };
