@@ -115,22 +115,16 @@ void CorpsRigide::integrer(float deltaTime)
  */
 void CorpsRigide::_updateTransformMatrix()
 {
-    // D'abord, on convertit le quaternion en sa matrice de rotation 3x3 
     // cf. Chapitre 8 Conversion quaternion -> Matrices
     Matrix3 rotMatrix = m_orientation.toMatrix3();
 
-    // Ensuite, on dit à notre matrice 4x4 d'utiliser cette matrice 3x3
-    // pour sa partie "rotation".
     // cf. Chapitre 8 Transformations linéaires et affines
     m_transformMatrix.setRotation(rotMatrix);
-    
-    // On dit à notre matrice 4x4 d'utiliser ce vecteur
-    // pour sa partie "translation" (la 4ème colonne).
+
     // cf. Chapitre 8 Transformations linéaires et affines
     m_transformMatrix.setPosition(m_position);
 
-    // Pour que cette matrice soit une matrice de transformation affine valide,
-    // ces méthodes doivent garantir que la dernière ligne est bien (0, 0, 0, 1).
+    // La dernière ligne doit bien être (0, 0, 0, 1).
 }
 
 /**
@@ -142,17 +136,9 @@ void CorpsRigide::_updateInverseInertiaTensorWorld()
     /*
      * Formule : I_monde = R * I_local * R_transpose
      * Où R est la matrice de rotation 3x3 de notre orientation.
+     * cf Chapitre 9 Notes d'implémentation
      */
-
-    // 1. Obtenir la matrice de rotation 3x3 à partir du quaternion
-    // (Cette fonction doit implémenter la formule que vous m'avez montrée)
     Matrix3 rotMatrix = m_orientation.toMatrix3();
-
-    // 2. Obtenir la transposée de cette matrice
-    // (suppose que votre classe Matrix3 a une méthode .transposed())
     Matrix3 rotMatrixT = rotMatrix.transposed();
-
-    // 3. Calculer le tenseur monde par la triple multiplication
-    // (suppose que l'opérateur * est surchargé pour Matrix3 * Matrix3)
     m_inverseInertiaTensorWorld = rotMatrix * m_inverseInertiaTensorBody * rotMatrixT;
 }
