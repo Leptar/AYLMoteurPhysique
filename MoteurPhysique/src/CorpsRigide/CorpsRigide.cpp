@@ -69,7 +69,6 @@ void CorpsRigide::setAngularDamping(float damping)
     m_angularDamping = damping;
 }
 
-
 Vector3D CorpsRigide::getPosition()
 {
     return m_position;
