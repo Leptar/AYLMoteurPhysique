@@ -36,6 +36,6 @@ public:
 private:
     std::vector<Particule*> m_particules;
 
-    ParticuleForceRegistry     m_forceRegistry;
+    ParticuleForceRegistry m_forceRegistry;
     SystemCollisionDetection m_collisionDetector;
 };
