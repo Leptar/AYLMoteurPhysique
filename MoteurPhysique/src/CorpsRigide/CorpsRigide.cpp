@@ -92,13 +92,13 @@ void CorpsRigide::addForce(const Vector3D& force)
 }
 
 /**
- * @brief Applique une force à un point en coordonnées MONDE.
+ * @brief Applique une force à un point en coordonnées.
  * Cela génère une force ET un torque.
  */
-void CorpsRigide::addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint)
+void CorpsRigide::addForceAtPoint(const Vector3D& force, const Vector3D& point)
 {
     m_forceAccum = m_forceAccum + force;
-    Vector3D leverArm = worldPoint - m_position;
+    Vector3D leverArm = point - m_position;
     Vector3D torque = leverArm.cross(force); 
     m_torqueAccum = m_torqueAccum + torque; // Principe de d'Alembert
 }
@@ -149,7 +149,39 @@ void CorpsRigide::_updateInverseInertiaTensorWorld()
     m_inverseInertiaTensorWorld = rotMatrix * m_inverseInertiaTensorBody * rotMatrixT;
 }
 
+/**
+ * @brief Intégrateur physique (Phase 3).
+ * Calcule le nouvel état (position, vélocité, orientation, vélocité angulaire)
+ * du corps rigide pour une frame donnée.
+ */
 void CorpsRigide::integrer(float deltaTime)
 {
-    // À FAIRE
+    if (m_inverseMasse <= 0.0f) {
+        clearAccumulators(); // On vide quand même les forces
+        return;
+    }
+
+    // Linéaire 
+    Vector3D accelerationLineaire = m_forceAccum.scalar(m_inverseMasse);
+    m_velocite = m_velocite + accelerationLineaire.scalar(deltaTime);
+    m_velocite = m_velocite.scalar(powf(m_linearDamping, deltaTime));
+    m_position = m_position + m_velocite.scalar(deltaTime);
+
+    // Rotationel
+    Vector3D accelerationAngulaire = m_inverseInertiaTensorWorld.transform(m_torqueAccum);
+    m_velociteAngulaire = m_velociteAngulaire + accelerationAngulaire.scalar(deltaTime);
+    m_velociteAngulaire = m_velociteAngulaire.scalar(powf(m_angularDamping, deltaTime));
+
+    Quaternion w_quat(0, m_velociteAngulaire); 
+    Quaternion q_produit = w_quat * m_orientation;
+    Quaternion q_delta = q_produit.scalar(0.5f * deltaTime);
+    m_orientation = m_orientation + q_delta;
+    
+    m_orientation.normalize();
+
+    // Update pour chaque frame
+    _updateTransformMatrix();           // M-à-j la matrice d'affichage
+    _updateInverseInertiaTensorWorld(); // M-à-j la matrice de physique (pour la prochaine frame)
+
+    clearAccumulators();
 }
