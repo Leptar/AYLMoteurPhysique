@@ -1,7 +1,5 @@
 #pragma once
 #include <array>
-#include "3DVector.h"
-#include "Matrix3.h"
 
 class Matrix4 {
 public:
@@ -25,8 +23,4 @@ public:
 	Matrix4 Identity() const {return Matrix4(1.f);}
 	Matrix4 inverse() const;
 
-	static Matrix4 RotX(float a);
-	static Matrix4 RotY(float a);
-	static Matrix4 RotZ(float a);
-	static Matrix4 AxisAngle(const Vector3D& axis, float angle);
 };
