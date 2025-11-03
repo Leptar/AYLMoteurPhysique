@@ -1,6 +1,8 @@
 #include "Matrix3.h"
 #include <cmath>
 
+const float Epsilon = 1e-6f;
+
 Matrix3::Matrix3() { setIdentity(); }
 
 Matrix3::Matrix3(float diag) {
@@ -121,4 +123,22 @@ Matrix3 Matrix3::AxisAngle(const Vector3D& axis, float angle) {
         t*y*x + s*z, t*y*y + c,   t*y*z - s*x,
         t*z*x - s*y, t*z*y + s*x, t*z*z + c
     );
+}
+
+
+bool Matrix3::AreEqual(const Matrix3& m1, const Matrix3& m2) {
+	for (int r = 0; r < 3; ++r) {
+		for (int c = 0; c < 3; ++c) {
+			if (std::abs(m1(r, c) - m2(r, c)) > Epsilon) {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+bool Matrix3::AreEqual(const Vector3D& v1, const Vector3D& v2) {
+	return (std::abs(v1.x - v2.x) < Epsilon) &&
+		   (std::abs(v1.y - v2.y) < Epsilon) &&
+		   (std::abs(v1.z - v2.z) < Epsilon);
 }
