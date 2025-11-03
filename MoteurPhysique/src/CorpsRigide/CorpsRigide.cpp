@@ -88,7 +88,7 @@ const Matrix4& CorpsRigide::getTransformMatrix()
  */
 void CorpsRigide::addForce(const Vector3D& force)
 {
-    m_forceAccum = m_forceAccum + force;
+    m_forceAccum = m_forceAccum + force; // 2ème loi de Newton
 }
 
 /**
@@ -99,8 +99,8 @@ void CorpsRigide::addForceAtPoint(const Vector3D& force, const Vector3D& worldPo
 {
     m_forceAccum = m_forceAccum + force;
     Vector3D leverArm = worldPoint - m_position;
-    Vector3D torque = leverArm.cross(force);
-    m_torqueAccum = m_torqueAccum + torque;
+    Vector3D torque = leverArm.cross(force); 
+    m_torqueAccum = m_torqueAccum + torque; // Principe de d'Alembert
 }
 
 /**
