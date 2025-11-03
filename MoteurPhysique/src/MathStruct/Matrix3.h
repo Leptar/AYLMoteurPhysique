@@ -19,6 +19,7 @@ public:
 	float& operator()(int r,int c);
 	float  operator()(int r,int c) const;
 
+
 	static Matrix3 FromColumns(const Vector3D& c0, const Vector3D& c1, const Vector3D& c2);
 
 	Matrix3 operator*(const Matrix3& B) const;
@@ -35,4 +36,6 @@ public:
 	static Matrix3 RotY(float a);
 	static Matrix3 RotZ(float a);
 	static Matrix3 AxisAngle(const Vector3D& axis, float angle);
+	static bool AreEqual(const Matrix3& m1, const Matrix3& m2);
+	static bool AreEqual(const Vector3D& v1, const Vector3D& v2);
 };
