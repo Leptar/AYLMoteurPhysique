@@ -1,7 +1,6 @@
 #include "CorpsRigide.h"
 #include <cmath> 
 
-// --- Constructeur ---
 CorpsRigide::CorpsRigide() :
     m_position(0, 0, 0),
     m_velocite(0, 0, 0),
@@ -84,33 +83,37 @@ const Matrix4& CorpsRigide::getTransformMatrix()
     return m_transformMatrix;
 }
 
+/**
+ * @brief Applique une force au centre de masse (pas de torque).
+ */
 void CorpsRigide::addForce(const Vector3D& force)
 {
-    // À FAIRE
-}
-
-void CorpsRigide::addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint)
-{
-    // À FAIRE
-}
-
-void CorpsRigide::addForceAtBodyPoint(const Vector3D& force, const Vector3D& bodyPoint)
-{
-    // À FAIRE
-}
-
-void CorpsRigide::clearAccumulators()
-{
-    // À FAIRE
-}
-
-void CorpsRigide::integrer(float deltaTime)
-{
-    // À FAIRE
+    m_forceAccum = m_forceAccum + force;
 }
 
 /**
- * @brief Met à jour la matrice de transformation 4x4 (pour le rendu)
+ * @brief Applique une force à un point en coordonnées MONDE.
+ * Cela génère une force ET un torque.
+ */
+void CorpsRigide::addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint)
+{
+    m_forceAccum = m_forceAccum + force;
+    Vector3D leverArm = worldPoint - m_position;
+    Vector3D torque = leverArm.cross(force);
+    m_torqueAccum = m_torqueAccum + torque;
+}
+
+/**
+ * @brief Vide les accumulateurs de force et de torque.
+ */
+void CorpsRigide::clearAccumulators()
+{
+    m_forceAccum = Vector3D();
+    m_torqueAccum = Vector3D();
+}
+
+/**
+ * @brief Met à jour la matrice de transformation 4x4
  * en combinant l'orientation et la position actuelles.
  * Pour l'afficher dans le jeu de tir ballistique
  */
@@ -126,12 +129,13 @@ void CorpsRigide::_updateTransformMatrix()
     m_transformMatrix.setPosition(m_position);
 
     // La dernière ligne doit bien être (0, 0, 0, 1).
+    // A ajouter selon comment est implémenté Matrix4
 }
 
 /**
- * @brief Met à jour le tenseur d'inertie inverse 3x3 (pour la physique)
- * en le pivotant dans le système de coordonnées du monde.
- * à utiliser avec le torque (m_torqueAccum) pour calculer l'accélération angulaire
+ * @brief Met à jour le tenseur d'inertie inverse 3x3
+ * en le pivotant dans le système de coordonnées.
+ * à utiliser avec le torque (m_torqueAccum) pour calculer l'accélération angulaire alpha
  */
 void CorpsRigide::_updateInverseInertiaTensorWorld()
 {
@@ -143,4 +147,9 @@ void CorpsRigide::_updateInverseInertiaTensorWorld()
     Matrix3 rotMatrix = m_orientation.toMatrix3();
     Matrix3 rotMatrixT = rotMatrix.transposed();
     m_inverseInertiaTensorWorld = rotMatrix * m_inverseInertiaTensorBody * rotMatrixT;
+}
+
+void CorpsRigide::integrer(float deltaTime)
+{
+    // À FAIRE
 }

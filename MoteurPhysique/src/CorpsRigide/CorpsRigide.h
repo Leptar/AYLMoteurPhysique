@@ -52,8 +52,7 @@ public:
 
     // Gestion des forces et torques
     void addForce(const Vector3D& force); // Centre de masse
-    void addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint); // Coordonnées dans le monde
-    void addForceAtBodyPoint(const Vector3D& force, const Vector3D& bodyPoint); // Sur un point précis du corps
+    void addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint); // Coordonnées dans le monde (Force externe appliquée n'importe où sur le corps)
     void clearAccumulators();
 
     // Integrer
