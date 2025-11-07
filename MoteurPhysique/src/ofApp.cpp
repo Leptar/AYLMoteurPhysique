@@ -1,6 +1,7 @@
 #include "ofApp.h"
 
 #include "Matrix3Test.h"
+#include "Matrix4Test.cpp"
 #include "ForceGenerator/ForceFriction.h"
 #include "ForceGenerator/ForceGravity.h"
 #include "Tests/3DVectorTest.h"
@@ -20,6 +21,7 @@ ofColor backgroundBottom(4, 6, 12);
 void ofApp::setup(){
 		Matrix3Test TestMatrix;
 		TestMatrix.RunAllTests();
+		RunAllTestsMatrix4();
 
         // Configure les préréglages de projectiles par défaut pour la première scène.
         projectileConfigs[ProjectileType::Balle] =

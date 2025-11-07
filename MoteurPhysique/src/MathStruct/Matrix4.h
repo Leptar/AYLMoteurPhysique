@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
-
 class Matrix4 {
 public:
+
 	std::array<float,16> m;
 
 	Matrix4();
@@ -22,5 +22,4 @@ public:
 	float   determinant() const;
 	Matrix4 Identity() const {return Matrix4(1.f);}
 	Matrix4 inverse() const;
-
 };
