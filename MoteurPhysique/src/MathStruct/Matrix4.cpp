@@ -145,6 +145,11 @@ void Matrix4::SetRotation(Matrix3& m_rotation) {
 
 }
 
-Matrix4 Matrix4::SetPosition(Vector3D & m_position) {}
+Matrix4 Matrix4::SetPosition(Vector3D & m_position)
+{
+	m[3] = m_position.x;
+	m[7] = m_position.y;
+	m[11] = m_position.z;
+}
 
 

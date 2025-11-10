@@ -126,10 +126,13 @@ void CorpsRigide::_updateTransformMatrix()
     m_transformMatrix.SetRotation(rotMatrix);
 
     // cf. Chapitre 8 Transformations linéaires et affines
-    m_transformMatrix.setPosition(m_position);
+    m_transformMatrix.SetPosition(m_position);
 
     // La dernière ligne doit bien être (0, 0, 0, 1).
-    // A ajouter selon comment est implémenté Matrix4
+    m_transformMatrix.m[12] = 0;
+    m_transformMatrix.m[13] = 0;
+    m_transformMatrix.m[14] = 0;
+    m_transformMatrix.m[0] = 1;
 }
 
 /**
@@ -168,11 +171,11 @@ void CorpsRigide::integrer(float deltaTime)
     m_position = m_position + m_velocite.scalar(deltaTime);
 
     // Rotationel
-    Vector3D accelerationAngulaire = m_inverseInertiaTensorWorld.transform(m_torqueAccum);
+    Vector3D accelerationAngulaire = m_inverseInertiaTensorWorld * m_torqueAccum;
     m_velociteAngulaire = m_velociteAngulaire + accelerationAngulaire.scalar(deltaTime);
     m_velociteAngulaire = m_velociteAngulaire.scalar(powf(m_angularDamping, deltaTime));
 
-    Quaternion w_quat(0, m_velociteAngulaire);
+    Quaternion w_quat = Quaternion::FromAxisAngle(m_velociteAngulaire, 0);
     Quaternion q_produit = w_quat * m_orientation;
     Quaternion q_delta = q_produit.scalar(0.5f * deltaTime);
     m_orientation = m_orientation + q_delta;
