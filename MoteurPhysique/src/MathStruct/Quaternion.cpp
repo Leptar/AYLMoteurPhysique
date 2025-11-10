@@ -1,5 +1,6 @@
 #include "Quaternion.h"
 
+#include <Matrix3.h>
 #include <algorithm>
 #include <cmath>
 
@@ -72,6 +73,24 @@ Vector3D Quaternion::rotate(const Vector3D& v) const {
     return Vector3D(r.x, r.y, r.z);
 }
 
+Matrix3 Quaternion::toMatrix3() const {
+	float xx = x * x;
+	float yy = y * y;
+	float zz = z * z;
+	float xy = x * y;
+	float xz = x * z;
+	float yz = y * z;
+	float wx = w * x;
+	float wy = w * y;
+	float wz = w * z;
+
+	return Matrix3(
+		1.f - 2.f * (yy + zz), 2.f * (xy - wz),       2.f * (xz + wy),
+		2.f * (xy + wz),       1.f - 2.f * (xx + zz), 2.f * (yz - wx),
+		2.f * (xz - wy),       2.f * (yz + wx),       1.f - 2.f * (xx + yy)
+	);
+}
+
 Quaternion Quaternion::Slerp(const Quaternion& a, const Quaternion& b, float t) {
 	if (t <= 0.f) return a;
 	if (t >= 1.f) return b;
@@ -107,4 +126,12 @@ Quaternion Quaternion::Slerp(const Quaternion& a, const Quaternion& b, float t) 
 		(a.z*s0 + bb.z*s1) * invSin
 	);
 	return r;
+}
+
+float Quaternion::dot(const Quaternion& b) const {
+	return w * b.w + x * b.x + y * b.y + z * b.z;
+}
+
+Quaternion Quaternion::operator+(const Quaternion & b) const{
+	return Quaternion(w + b.w, x + b.x, y + b.y, z + b.z);
 }
