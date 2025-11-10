@@ -34,6 +34,7 @@ private:
     void _updateInverseInertiaTensorWorld();
 
 public:
+    CorpsRigide();
     // Setters
     void setPosition(const Vector3D& pos);
     void setVelocite(const Vector3D& vel);

@@ -1,5 +1,5 @@
 #include "CorpsRigide.h"
-#include <cmath> 
+#include <cmath>
 
 CorpsRigide::CorpsRigide() :
     m_position(0, 0, 0),
@@ -12,8 +12,8 @@ CorpsRigide::CorpsRigide() :
     m_forceAccum(0, 0, 0),
     m_torqueAccum(0, 0, 0)
 {
-    setInverseInertiaTensorBody(Matrix3::identity());
-    
+    setInverseInertiaTensorBody(Matrix3::Identity());
+
     _updateTransformMatrix();
     _updateInverseInertiaTensorWorld();
 }
@@ -41,7 +41,7 @@ void CorpsRigide::setMasse(float masse)
 void CorpsRigide::setOrientation(const Quaternion& q)
 {
     m_orientation = q;
-    
+
     _updateTransformMatrix();
     _updateInverseInertiaTensorWorld();
 }
@@ -54,7 +54,7 @@ void CorpsRigide::setVelociteAngulaire(const Vector3D& velAng)
 void CorpsRigide::setInverseInertiaTensorBody(const Matrix3& tensor)
 {
     m_inverseInertiaTensorBody = tensor;
-    
+
     _updateInverseInertiaTensorWorld();
 }
 
@@ -99,7 +99,7 @@ void CorpsRigide::addForceAtPoint(const Vector3D& force, const Vector3D& point)
 {
     m_forceAccum = m_forceAccum + force;
     Vector3D leverArm = point - m_position;
-    Vector3D torque = leverArm.cross(force); 
+    Vector3D torque = leverArm.cross(force);
     m_torqueAccum = m_torqueAccum + torque; // Principe de d'Alembert
 }
 
@@ -123,7 +123,7 @@ void CorpsRigide::_updateTransformMatrix()
     Matrix3 rotMatrix = m_orientation.toMatrix3();
 
     // cf. Chapitre 8 Transformations linéaires et affines
-    m_transformMatrix.setRotation(rotMatrix);
+    m_transformMatrix.SetRotation(rotMatrix);
 
     // cf. Chapitre 8 Transformations linéaires et affines
     m_transformMatrix.setPosition(m_position);
@@ -145,7 +145,7 @@ void CorpsRigide::_updateInverseInertiaTensorWorld()
      * cf Chapitre 9 Notes d'implémentation
      */
     Matrix3 rotMatrix = m_orientation.toMatrix3();
-    Matrix3 rotMatrixT = rotMatrix.transposed();
+    Matrix3 rotMatrixT = rotMatrix.transpose();
     m_inverseInertiaTensorWorld = rotMatrix * m_inverseInertiaTensorBody * rotMatrixT;
 }
 
@@ -161,7 +161,7 @@ void CorpsRigide::integrer(float deltaTime)
         return;
     }
 
-    // Linéaire 
+    // Linéaire
     Vector3D accelerationLineaire = m_forceAccum.scalar(m_inverseMasse);
     m_velocite = m_velocite + accelerationLineaire.scalar(deltaTime);
     m_velocite = m_velocite.scalar(powf(m_linearDamping, deltaTime));
@@ -172,11 +172,11 @@ void CorpsRigide::integrer(float deltaTime)
     m_velociteAngulaire = m_velociteAngulaire + accelerationAngulaire.scalar(deltaTime);
     m_velociteAngulaire = m_velociteAngulaire.scalar(powf(m_angularDamping, deltaTime));
 
-    Quaternion w_quat(0, m_velociteAngulaire); 
+    Quaternion w_quat(0, m_velociteAngulaire);
     Quaternion q_produit = w_quat * m_orientation;
     Quaternion q_delta = q_produit.scalar(0.5f * deltaTime);
     m_orientation = m_orientation + q_delta;
-    
+
     m_orientation.normalize();
 
     // Update pour chaque frame

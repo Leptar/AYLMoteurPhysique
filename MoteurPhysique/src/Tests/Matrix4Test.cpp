@@ -38,7 +38,7 @@ const Matrix4 Seq( 1,  2,  3,  4,
 void Test_Constructor_Default() {
 	Matrix4 m;
 
-	ASSERT_MATRIX_EQUAL(m, Zero);
+	ASSERT_MATRIX_EQUAL(m, Identity);
 }
 
 void Test_Constructor_Diagonal() {

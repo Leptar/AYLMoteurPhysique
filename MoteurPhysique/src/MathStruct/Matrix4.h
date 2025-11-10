@@ -1,4 +1,6 @@
 #pragma once
+#include "Matrix3.h"
+
 #include <array>
 class Matrix4 {
 public:
@@ -22,4 +24,7 @@ public:
 	float   determinant() const;
 	Matrix4 Identity() const {return Matrix4(1.f);}
 	Matrix4 inverse() const;
+
+	void SetRotation(Matrix3& m_rotation);
+	Matrix4 SetPosition(Vector3D& m_position);
 };

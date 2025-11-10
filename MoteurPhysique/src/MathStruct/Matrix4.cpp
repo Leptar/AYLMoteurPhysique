@@ -1,11 +1,13 @@
 #include "Matrix4.h"
 
+#include "Matrix3.h"
+
 
 Matrix4::Matrix4() {
-	m = {0,0,0,0,
-		 0,0,0,0,
-		 0,0,0,0,
-		 0,0,0,0};
+	m = {1,0,0,0,
+		 0,1,0,0,
+		 0,0,1,0,
+		 0,0,0,1};
 }
 
 Matrix4::Matrix4(float diag) {
@@ -124,5 +126,25 @@ Matrix4 Matrix4::inverse() const {
         c03, c13, c23, c33
     ) / det;
 }
+
+void Matrix4::SetRotation(Matrix3& m_rotation) {
+	Matrix3 m_transfo_linear(m[0], m[1], m[2],
+							m[4], m[5], m[6],
+							m[8], m[9], m[10]);
+	m_transfo_linear = m_transfo_linear * m_rotation;
+
+	m[0] = m_transfo_linear.m[0];
+	m[1] = m_transfo_linear.m[1];
+	m[2] = m_transfo_linear.m[2];
+	m[4] = m_transfo_linear.m[4];
+	m[5] = m_transfo_linear.m[5];
+	m[6] = m_transfo_linear.m[6];
+	m[8] = m_transfo_linear.m[8];
+	m[9] = m_transfo_linear.m[9];
+	m[10] = m_transfo_linear.m[10];
+
+}
+
+Matrix4 Matrix4::SetPosition(Vector3D & m_position) {}
 
 
