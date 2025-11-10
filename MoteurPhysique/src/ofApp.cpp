@@ -1,5 +1,8 @@
 #include "ofApp.h"
 
+#include "Matrix3Test.h"
+#include "Matrix4Test.cpp"
+#include "QuaternionTest.h"
 #include "ForceGenerator/ForceFriction.h"
 #include "ForceGenerator/ForceGravity.h"
 #include "Tests/3DVectorTest.h"
@@ -17,6 +20,11 @@ ofColor backgroundBottom(4, 6, 12);
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+		Matrix3Test TestMatrix;
+		TestMatrix.RunAllTests();
+		RunAllTestsMatrix4();
+		QuaternionTest::RunAllTests();
+
         // Configure les préréglages de projectiles par défaut pour la première scène.
         projectileConfigs[ProjectileType::Balle] =
         { .masse = 0.02f,  // 20 g (balle d'airsoft)

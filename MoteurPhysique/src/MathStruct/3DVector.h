@@ -9,7 +9,7 @@
 class Vector3D {
 public:
     Vector3D();
-    Vector3D(float x, float y, float z); 
+    Vector3D(float x, float y, float z);
 
     // produit par un scalaire
     Vector3D scalar(const float &v) const;
