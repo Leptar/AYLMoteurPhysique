@@ -2,6 +2,7 @@
 
 #include "Matrix3Test.h"
 #include "Matrix4Test.cpp"
+#include "QuaternionTest.h"
 #include "ForceGenerator/ForceFriction.h"
 #include "ForceGenerator/ForceGravity.h"
 #include "Tests/3DVectorTest.h"
@@ -22,6 +23,7 @@ void ofApp::setup(){
 		Matrix3Test TestMatrix;
 		TestMatrix.RunAllTests();
 		RunAllTestsMatrix4();
+		QuaternionTest::RunAllTests();
 
         // Configure les préréglages de projectiles par défaut pour la première scène.
         projectileConfigs[ProjectileType::Balle] =

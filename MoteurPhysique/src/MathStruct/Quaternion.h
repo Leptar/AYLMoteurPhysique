@@ -1,13 +1,12 @@
 #pragma once
 #include "3DVector.h"
-#include "Matrix3.h"
 
 class Quaternion {
 public:
 	float w, x, y, z;
 
 	// --- Constructeurs ---
-	Quaternion();                                   // identité
+	Quaternion();                                   // zero
 	Quaternion(float W, float X, float Y, float Z);
 
 	// --- Création / Conversion ---

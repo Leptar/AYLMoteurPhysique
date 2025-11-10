@@ -1,13 +1,12 @@
 #include "Quaternion.h"
-#include "Matrix4.h"
 
 #include <algorithm>
 #include <cmath>
 
-Quaternion::Quaternion() : w(1.f), x(0.f), y(0.f), z(0.f) {}
+Quaternion::Quaternion() : w(0.f), x(0.f), y(0.f), z(0.f) {}
 Quaternion::Quaternion(float W, float X, float Y, float Z) : w(W), x(X), y(Y), z(Z) {}
 
-Quaternion Quaternion::Identity() { return Quaternion(); }
+Quaternion Quaternion::Identity() { return Quaternion(1.f, 0.f, 0.f, 0.f); }
 
 Quaternion Quaternion::FromAxisAngle(const Vector3D& axis, float angleRad) {
 
@@ -51,7 +50,7 @@ Quaternion Quaternion::conjugate() const {
 
 Quaternion Quaternion::inverse() const {
     float L2 = w*w + x*x + y*y + z*z;
-    if (L2 == 0.f) return Quaternion();
+    if (L2 == 0.f) return *this;
     Quaternion c = conjugate();
     return Quaternion(c.w/L2, c.x/L2, c.y/L2, c.z/L2);
 }

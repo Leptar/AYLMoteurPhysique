@@ -16,7 +16,6 @@ bool AreEqual(const Matrix4& a, const Matrix4& b) {
 }
 
 // Remplacer par vos macros de test
-#define ASSERT_TRUE(condition) assert(condition)
 #define ASSERT_FALSE(condition) assert(!(condition))
 #define ASSERT_MATRIX_EQUAL(m1, m2) assert(AreEqual(m1, m2))
 #define ASSERT_FLOAT_EQUAL(f1, f2) assert(std::abs((f1) - (f2)) < Epsilon)
@@ -59,7 +58,6 @@ void Test_Constructor_Diagonal() {
 void Test_Constructor_Full() {
 	Matrix4 m = Seq;
 	ASSERT_FLOAT_EQUAL(m.m[0], 1.f);
-	std::cout << m.m[1] << '\n';
 	ASSERT_FLOAT_EQUAL(m.m[1], 2.f);
 	ASSERT_FLOAT_EQUAL(m.m[4], 5.f);
 	ASSERT_FLOAT_EQUAL(m.m[15], 16.f);
