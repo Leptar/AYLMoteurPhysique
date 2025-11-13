@@ -31,6 +31,10 @@ float Quaternion::length() const {
     return std::sqrt(w*w + x*x + y*y + z*z);
 }
 
+Quaternion Quaternion::scalar(float f) {
+    return Quaternion(f*w, f*x, f*y, f*z);
+}
+
 void Quaternion::normalize() {
     float len = length();
     if (len == 0.f) { w = 1.f; x = y = z = 0.f; return; }
