@@ -1,6 +1,8 @@
 #pragma once
 #include "3DVector.h"
 
+#include <Matrix3.h>
+
 class Quaternion {
 public:
 	float w, x, y, z;
@@ -26,6 +28,13 @@ public:
 	Quaternion operator+(const Quaternion& b) const;
 	Quaternion operator*(const Quaternion& b) const;  // composition
 	Vector3D   rotate(const Vector3D& v) const;       // rotation d'un vecteur
+	Matrix3 toMatrix3() const;
+
+	float dot(const Quaternion& b) const;
+
+	// --- Opérations statiques ---
+	Quaternion operator+(const Quaternion& b) const;
+
 
 	// --- Interpolation ---
 	static Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t);
