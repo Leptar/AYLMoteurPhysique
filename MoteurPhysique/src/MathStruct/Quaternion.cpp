@@ -60,16 +60,6 @@ Quaternion Quaternion::scalar(float f) {
     return Quaternion(f*w, f*x, f*y, f*z);
 }
 
-Quaternion Quaternion::operator+(const Quaternion& b) const {
-    const Quaternion& a = *this;
-    return Quaternion(
-        a.w+b.w,
-        a.w+b.x,
-        a.w+b.y,
-        a.w+b.z
-    );
-}
-
 Quaternion Quaternion::operator*(const Quaternion& b) const {
     const Quaternion& a = *this;
     return Quaternion(

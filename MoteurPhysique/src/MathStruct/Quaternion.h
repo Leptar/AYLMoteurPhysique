@@ -25,7 +25,6 @@ public:
 	Quaternion scalar(float f);
 
 	// --- Opérateurs ---
-	Quaternion operator+(const Quaternion& b) const;
 	Quaternion operator*(const Quaternion& b) const;  // composition
 	Vector3D   rotate(const Vector3D& v) const;       // rotation d'un vecteur
 	Matrix3 toMatrix3() const;
