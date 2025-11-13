@@ -31,10 +31,6 @@ float Quaternion::length() const {
     return std::sqrt(w*w + x*x + y*y + z*z);
 }
 
-Quaternion Quaternion::scalar(float f) {
-    return Quaternion(f*w, f*x, f*y, f*z);
-}
-
 void Quaternion::normalize() {
     float len = length();
     if (len == 0.f) { w = 1.f; x = y = z = 0.f; return; }
@@ -57,6 +53,20 @@ Quaternion Quaternion::inverse() const {
     if (L2 == 0.f) return *this;
     Quaternion c = conjugate();
     return Quaternion(c.w/L2, c.x/L2, c.y/L2, c.z/L2);
+}
+
+Quaternion Quaternion::scalar(float f) {
+    return Quaternion(f*w, f*x, f*y, f*z);
+}
+
+Quaternion Quaternion::operator+(const Quaternion& b) const {
+    const Quaternion& a = *this;
+    return Quaternion(
+        a.w+b.w,
+        a.w+b.x,
+        a.w+b.y,
+        a.w+b.z
+    );
 }
 
 Quaternion Quaternion::operator*(const Quaternion& b) const {
