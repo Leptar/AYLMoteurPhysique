@@ -45,11 +45,15 @@ Matrix4 Matrix4::operator-(const Matrix4 & B) const {
 }
 
 Matrix4 Matrix4::operator*(const Matrix4 & B) const {
-	Matrix4 C;
-	for (int c=0;c<4;++c)
-		for (int r=0;r<4;++r)
-			for (int k=0;k<4;++k)
+
+	Matrix4 C(0.f);
+	for (int c = 0; c < 4; ++c) {
+		for (int r = 0; r < 4; ++r) {
+			for (int k = 0; k < 4; ++k) {
 				C.m[c*4 + r] += m[k*4 + r] * B.m[c*4 + k];
+			}
+		}
+	}
 	return C;
 }
 
@@ -145,7 +149,7 @@ void Matrix4::SetRotation(Matrix3& m_rotation) {
 
 }
 
-Matrix4 Matrix4::SetPosition(Vector3D & m_position)
+void Matrix4::SetPosition(Vector3D & m_position)
 {
 	m[3] = m_position.x;
 	m[7] = m_position.y;

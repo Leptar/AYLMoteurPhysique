@@ -26,5 +26,5 @@ public:
 	Matrix4 inverse() const;
 
 	void SetRotation(Matrix3& m_rotation);
-	Matrix4 SetPosition(Vector3D& m_position);
+	void SetPosition(Vector3D& m_position);
 };
