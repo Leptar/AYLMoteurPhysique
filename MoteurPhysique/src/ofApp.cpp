@@ -545,7 +545,10 @@ void ofApp::spawnRigidBodyFromDropper()
                 ofRandom(12.f, 22.f),
                 ofRandom(14.f, 26.f),
                 ofRandom(12.f, 22.f));
-        float mass = ofClamp((halfExtents.x + halfExtents.y + halfExtents.z) * 0.2f, 1.2f, 6.f);
+        Vector3D dimensions = halfExtents.scalar(2.f);
+        float volume = dimensions.x * dimensions.y * dimensions.z;
+        float density = 0.00085f;
+        float mass = ofClamp(volume * density, 10.f, 52.f);
 
         Vector3D position(dropperX, dropperSpawnHeight, dropperZ);
         ofColor color = ofColor::fromHsb(ofRandom(0, 255), 220, 240);

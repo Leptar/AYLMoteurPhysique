@@ -115,7 +115,10 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
                 ofRandom(14.f, 24.f),
                 ofRandom(12.f, 26.f),
                 ofRandom(14.f, 24.f));
-        float mass = ofClamp((halfExtents.x + halfExtents.y + halfExtents.z) * 0.18f, 1.5f, 5.5f);
+        Vector3D dimensions = halfExtents.scalar(2.f);
+        float volume = dimensions.x * dimensions.y * dimensions.z;
+        float density = 0.00085f;
+        float mass = ofClamp(volume * density, 12.f, 48.f);
 
         Vector3D position(
                 ofRandom(-boundsX * 0.7f, boundsX * 0.7f),
