@@ -6,16 +6,42 @@
 #include "ForceGenerator/ForceFriction.h"
 #include "ForceGenerator/ForceGravity.h"
 #include "Tests/3DVectorTest.h"
+#include "glm/vec3.hpp"
 
 #include <algorithm>
 #include <cmath>
 #include <cctype>
 #include <limits>
 #include <sstream>
+#include <utility>
 
 namespace {
 ofColor backgroundTop(12, 16, 32);
 ofColor backgroundBottom(4, 6, 12);
+
+ofMatrix4x4 buildTransformMatrix(const Quaternion& orientation, const Vector3D& position)
+{
+        Quaternion normalized = orientation;
+        normalized.normalize();
+
+        float clampedW = ofClamp(normalized.w, -1.f, 1.f);
+        float angleRad = 2.f * std::acos(clampedW);
+        float sinHalf = std::sqrt(std::max(0.f, 1.f - clampedW * clampedW));
+
+        ofVec3f axis(0.f, 1.f, 0.f);
+        if (sinHalf > 1e-4f) {
+                axis.set(normalized.x / sinHalf, normalized.y / sinHalf, normalized.z / sinHalf);
+        }
+
+        ofQuaternion ofQuat;
+        ofQuat.makeRotate(ofRadToDeg(angleRad), axis);
+
+        ofMatrix4x4 transform;
+        transform.makeRotationMatrix(ofQuat);
+        transform.setTranslation(position.x, position.y, position.z);
+        return transform;
+}
+
 }
 
 //--------------------------------------------------------------
@@ -54,10 +80,16 @@ void ofApp::setup(){
         forces[ForceType::Gravity] = std::make_unique<ForceGravity>();
         forces[ForceType::Friction] = std::make_unique<ForceFriction>();
 
+        rigidBodyGravityForce = std::make_unique<RigidBodyForceGravity>(rigidBodyGravity);
+        rigidBodyGravityForce->setEnabled(applyGravityRigidBodies);
+        physicsWorld.getRigidBodyForceRegistry()->add(rigidBodyGravityForce.get());
+
         float marginX = 120.f;
         float marginY = 140.f;
         blobBounds = ofRectangle(marginX, marginY, std::max(200.f, ofGetWidth() - 2 * marginX), std::max(220.f, ofGetHeight() - 2 * marginY));
         blob.setup(blobBounds);
+
+        setupRigidBodyGame();
 
         lastTime = ofGetElapsedTimeMillis();
 }
@@ -73,6 +105,11 @@ void ofApp::update(){
                 return;
         }
 
+        if (rigidBodyGravityForce) {
+                rigidBodyGravityForce->setGravity(rigidBodyGravity);
+                rigidBodyGravityForce->setEnabled(applyGravityRigidBodies);
+        }
+
         switch (activeScene) {
         case SceneType::Phase1Projectiles:
                 // Faire avancer la progression temporelle de la démonstration de projectiles.
@@ -82,6 +119,9 @@ void ofApp::update(){
                 // Récupérer les entrées du joueur et faire avancer la simulation du blob.
                 applyBlobMovementInput(dt);
                 blob.update(dt, useVerletBlob, applyGravityBlob, applyFrictionBlob, applySpringsBlob);
+                break;
+        case SceneType::Phase3Game:
+                updateRigidBodyGame(dt);
                 break;
         }
 }
@@ -98,6 +138,9 @@ void ofApp::draw(){
         case SceneType::Phase2Blob:
                 // Afficher le blob et les diagnostics optionnels.
                 blob.draw(showSprings, highlightCollisions);
+                break;
+        case SceneType::Phase3Game:
+                drawRigidBodyGame();
                 break;
         }
 
@@ -166,6 +209,7 @@ void ofApp::drawHud() const
         stream << "Scènes (Tab)\n";
         stream << ((activeScene == SceneType::Phase1Projectiles) ? "[x]" : "[ ]") << " Phase 1 - Projectiles (P)\n";
         stream << ((activeScene == SceneType::Phase2Blob) ? "[x]" : "[ ]") << " Phase 2 - Blob (B)\n\n";
+        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n\n";
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 stream << "Projectiles actifs : " << projectiles.size() << "\n";
@@ -173,7 +217,7 @@ void ofApp::drawHud() const
                 stream << (applyFrictionPhase1 ? "[x]" : "[ ]") << " Traînée (F)\n";
                 stream << "Créer un projectile : [1-4]\n";
                 stream << "Réinitialiser : R\n";
-        } else {
+        } else if (activeScene == SceneType::Phase2Blob) {
                 stream << "Particules du blob : " << blob.particleCount() << "\n";
                 stream << "Collisions actives : " << blob.activeCollisionCount() << "\n";
                 stream << (applyGravityBlob ? "[x]" : "[ ]") << " Gravité (G)\n";
@@ -186,6 +230,16 @@ void ofApp::drawHud() const
                 stream << "Détacher une particule : Backspace\n";
                 stream << "Réattacher toutes les particules : Entrée\n";
                 stream << "Réinitialiser le blob : R\n";
+        } else if (activeScene == SceneType::Phase3Game) {
+                int activeCrates = std::max(0, totalRigidBodySpawned - rigidBodyScore - rigidBodyLost);
+                stream << "Caisses actives : " << activeCrates << " / " << totalRigidBodySpawned << "\n";
+                stream << "Points : " << rigidBodyScore << "\n";
+                stream << "Perdues : " << rigidBodyLost << "\n";
+                stream << (applyGravityRigidBodies ? "[x]" : "[ ]") << " Gravité (G)\n";
+                stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
+                stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
+                stream << "Lancer une caisse : Espace\n";
+                stream << "Réinitialiser : R\n";
         }
 
         stream << "Afficher le HUD : H\n";
@@ -239,20 +293,36 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == OF_KEY_TAB) {
-                // Basculer entre les deux scènes de démonstration.
-                activeScene = (activeScene == SceneType::Phase1Projectiles) ? SceneType::Phase2Blob : SceneType::Phase1Projectiles;
+                // Basculer entre les trois scènes de démonstration.
                 if (activeScene == SceneType::Phase1Projectiles) {
-                        // S'assurer que les entrées restantes ne continuent pas de déplacer le blob lorsque l'on quitte la scène.
+                        activeScene = SceneType::Phase2Blob;
+                } else if (activeScene == SceneType::Phase2Blob) {
+                        activeScene = SceneType::Phase3Game;
+                } else {
+                        activeScene = SceneType::Phase1Projectiles;
+                }
+
+                if (activeScene != SceneType::Phase2Blob) {
                         clearBlobMovementKeys();
+                }
+                if (activeScene != SceneType::Phase3Game) {
+                        clearRigidBodyMovementKeys();
                 }
         }
 
         if (key == 'p' || key == 'P') {
                 activeScene = SceneType::Phase1Projectiles;
                 clearBlobMovementKeys();
+                clearRigidBodyMovementKeys();
         }
         if (key == 'b' || key == 'B') {
                 activeScene = SceneType::Phase2Blob;
+                clearRigidBodyMovementKeys();
+        }
+        if (key == 'j' || key == 'J') {
+                activeScene = SceneType::Phase3Game;
+                clearBlobMovementKeys();
+                clearRigidBodyMovementKeys();
         }
 
         if (key == 'h' || key == 'H') {
@@ -262,15 +332,17 @@ void ofApp::keyPressed(int key){
         if (key == 'g' || key == 'G') {
                 if (activeScene == SceneType::Phase1Projectiles) {
                         applyGravityPhase1 = !applyGravityPhase1;
-                } else {
+                } else if (activeScene == SceneType::Phase2Blob) {
                         applyGravityBlob = !applyGravityBlob;
+                } else if (activeScene == SceneType::Phase3Game) {
+                        applyGravityRigidBodies = !applyGravityRigidBodies;
                 }
         }
 
         if (key == 'f' || key == 'F') {
                 if (activeScene == SceneType::Phase1Projectiles) {
                         applyFrictionPhase1 = !applyFrictionPhase1;
-                } else {
+                } else if (activeScene == SceneType::Phase2Blob) {
                         applyFrictionBlob = !applyFrictionBlob;
                 }
         }
@@ -299,13 +371,27 @@ void ofApp::keyPressed(int key){
                 }
         }
 
+        if (key == 'x' || key == 'X') {
+                if (activeScene == SceneType::Phase3Game) {
+                        drawRigidBodyWireframe = !drawRigidBodyWireframe;
+                }
+        }
+
+        if (key == ' ') {
+                if (activeScene == SceneType::Phase3Game) {
+                        spawnRigidBodyFromDropper();
+                }
+        }
+
         if (key == 'r' || key == 'R') {
                 if (activeScene == SceneType::Phase1Projectiles) {
                         // Supprimer tous les projectiles et attendre que l'utilisateur en crée de nouveaux.
                         projectiles.clear();
-                } else {
+                } else if (activeScene == SceneType::Phase2Blob) {
                         // Reconstruire le blob dans sa configuration d'origine.
                         blob.reset(blobBounds);
+                } else if (activeScene == SceneType::Phase3Game) {
+                        resetRigidBodyGame();
                 }
         }
 
@@ -325,6 +411,7 @@ void ofApp::keyPressed(int key){
         }
 
         setBlobMovementKey(key, true);
+        setRigidBodyMovementKey(key, true);
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 if (key == '1') {
@@ -357,6 +444,7 @@ void ofApp::keyPressed(int key){
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
         setBlobMovementKey(key, false);
+        setRigidBodyMovementKey(key, false);
 }
 
 //--------------------------------------------------------------
@@ -408,6 +496,327 @@ void ofApp::clearBlobMovementKeys()
         movingRight = false;
         movingUp = false;
         movingDown = false;
+}
+
+//--------------------------------------------------------------
+void ofApp::setupRigidBodyGame()
+{
+        rigidBodyCamera.setNearClip(0.1f);
+        rigidBodyCamera.setFarClip(4000.f);
+        rigidBodyCamera.setPosition(0.f, 360.f, 620.f);
+        rigidBodyCamera.lookAt(glm::vec3(0.f, rigidBodyFloorY + 80.f, 0.f));
+        rigidBodyCamera.setAutoDistance(false);
+
+        performRigidBodyGameReset();
+}
+
+//--------------------------------------------------------------
+//--------------------------------------------------------------
+void ofApp::addRigidBodyBox(RigidBodyBox&& box)
+{
+        rigidBodies.push_back(std::move(box));
+        ++totalRigidBodySpawned;
+}
+
+//--------------------------------------------------------------
+void ofApp::performRigidBodyGameReset()
+{
+        rigidBodies.clear();
+        rigidBodies.reserve(48);
+        pendingRigidBodySpawns.clear();
+
+        rigidBodyScore = 0;
+        rigidBodyLost = 0;
+        totalRigidBodySpawned = 0;
+
+        dropperX = 0.f;
+        dropperZ = 0.f;
+        clearRigidBodyMovementKeys();
+
+        goalCenter.y = rigidBodyFloorY;
+
+        auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
+        for (auto& box : initialBoxes) {
+                addRigidBodyBox(std::move(box));
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::resetRigidBodyGame()
+{
+        rigidBodyResetRequested = true;
+}
+
+//--------------------------------------------------------------
+void ofApp::spawnRigidBodyFromDropper()
+{
+        Vector3D halfExtents(
+                ofRandom(12.f, 22.f),
+                ofRandom(14.f, 26.f),
+                ofRandom(12.f, 22.f));
+        Vector3D dimensions = halfExtents.scalar(2.f);
+        float volume = dimensions.x * dimensions.y * dimensions.z;
+        float density = 0.00085f;
+        float mass = ofClamp(volume * density, 10.f, 52.f);
+
+        Vector3D position(dropperX, dropperSpawnHeight, dropperZ);
+        ofColor color = ofColor::fromHsb(ofRandom(0, 255), 220, 240);
+
+        Vector3D initialVel(
+                ofRandom(-35.f, 35.f),
+                ofRandom(-5.f, 15.f),
+                ofRandom(-35.f, 35.f));
+        Vector3D angularVel(
+                ofRandom(-2.f, 2.f),
+                ofRandom(-2.f, 2.f),
+                ofRandom(-2.f, 2.f));
+
+        pendingRigidBodySpawns.push_back(physicsWorld.createRigidBodyBox(position, halfExtents, mass, color, initialVel, angularVel));
+}
+
+//--------------------------------------------------------------
+void ofApp::updateRigidBodyGame(float dt)
+{
+        if (rigidBodyResetRequested) {
+                performRigidBodyGameReset();
+                rigidBodyResetRequested = false;
+        }
+
+        if (!pendingRigidBodySpawns.empty()) {
+                for (RigidBodyBox& box : pendingRigidBodySpawns) {
+                        addRigidBodyBox(std::move(box));
+                }
+                pendingRigidBodySpawns.clear();
+        }
+
+        if (dt <= 0.f) {
+                return;
+        }
+
+        float moveX = ((moveDropperRight ? 1.f : 0.f) - (moveDropperLeft ? 1.f : 0.f)) * dropperSpeed * dt;
+        float moveZ = ((moveDropperBackward ? 1.f : 0.f) - (moveDropperForward ? 1.f : 0.f)) * dropperSpeed * dt;
+
+        dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
+        dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
+
+        for (auto& box : rigidBodies) {
+                if (box.reachedGoal || box.outOfBounds) {
+                        continue;
+                }
+
+                physicsWorld.applyRigidBodyForces(box.body, dt);
+
+                box.body.integrer(dt);
+
+                applyRigidBodyBounds(box);
+                handleRigidBodyGoal(box);
+
+                Vector3D position = box.body.getPosition();
+                if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
+                        box.outOfBounds = true;
+                        ++rigidBodyLost;
+                }
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::applyRigidBodyBounds(RigidBodyBox& box)
+{
+        Vector3D position = box.body.getPosition();
+        Vector3D velocity = box.body.getVelocite();
+        Vector3D angular = box.body.getVelociteAngulaire();
+
+        float radius = box.boundingRadius;
+        bool touchedFloor = false;
+
+        if (position.y - radius < rigidBodyFloorY) {
+                position.y = rigidBodyFloorY + radius;
+                if (velocity.y < 0.f) {
+                        velocity.y = -velocity.y * rigidBodyBounce;
+                }
+                touchedFloor = true;
+        }
+
+        if (position.x - radius < -rigidBodyBoundsX) {
+                position.x = -rigidBodyBoundsX + radius;
+                if (velocity.x < 0.f) {
+                        velocity.x = -velocity.x * rigidBodyBounce;
+                }
+        } else if (position.x + radius > rigidBodyBoundsX) {
+                position.x = rigidBodyBoundsX - radius;
+                if (velocity.x > 0.f) {
+                        velocity.x = -velocity.x * rigidBodyBounce;
+                }
+        }
+
+        if (position.z - radius < -rigidBodyBoundsZ) {
+                position.z = -rigidBodyBoundsZ + radius;
+                if (velocity.z < 0.f) {
+                        velocity.z = -velocity.z * rigidBodyBounce;
+                }
+        } else if (position.z + radius > rigidBodyBoundsZ) {
+                position.z = rigidBodyBoundsZ - radius;
+                if (velocity.z > 0.f) {
+                        velocity.z = -velocity.z * rigidBodyBounce;
+                }
+        }
+
+        if (touchedFloor) {
+                velocity.x *= rigidBodyFloorFriction;
+                velocity.z *= rigidBodyFloorFriction;
+                angular = angular.scalar(rigidBodyFloorFriction);
+
+                if (std::abs(velocity.x) < 1e-2f) velocity.x = 0.f;
+                if (std::abs(velocity.y) < 1e-2f) velocity.y = 0.f;
+                if (std::abs(velocity.z) < 1e-2f) velocity.z = 0.f;
+        }
+
+        box.body.setPosition(position);
+        box.body.setVelocite(velocity);
+        box.body.setVelociteAngulaire(angular);
+}
+
+//--------------------------------------------------------------
+void ofApp::handleRigidBodyGoal(RigidBodyBox& box)
+{
+        if (box.reachedGoal || box.outOfBounds) {
+                return;
+        }
+
+        float halfGoal = goalSize * 0.5f;
+        Vector3D position = box.body.getPosition();
+        if (std::abs(position.x - goalCenter.x) <= halfGoal &&
+            std::abs(position.z - goalCenter.z) <= halfGoal &&
+            position.y - box.boundingRadius <= rigidBodyFloorY + 2.f) {
+                box.reachedGoal = true;
+                ++rigidBodyScore;
+
+                position.y = rigidBodyFloorY + box.boundingRadius;
+                box.body.setPosition(position);
+                box.body.setVelocite(Vector3D(0.f, 0.f, 0.f));
+                box.body.setVelociteAngulaire(Vector3D(0.f, 0.f, 0.f));
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::drawRigidBodyGame()
+{
+        ofEnableDepthTest();
+        rigidBodyCamera.begin();
+
+        ofPushStyle();
+        ofSetColor(28, 32, 52);
+        ofDrawBox(0.f, rigidBodyFloorY - 6.f, 0.f, rigidBodyBoundsX * 2.f + 80.f, 12.f, rigidBodyBoundsZ * 2.f + 80.f);
+        ofPopStyle();
+
+        float wallHeight = 220.f;
+        float wallThickness = 10.f;
+
+        ofPushStyle();
+        ofSetColor(48, 58, 92, 220);
+        ofDrawBox(0.f, rigidBodyFloorY + wallHeight * 0.5f, rigidBodyBoundsZ + wallThickness * 0.5f, rigidBodyBoundsX * 2.f, wallHeight, wallThickness);
+        ofDrawBox(0.f, rigidBodyFloorY + wallHeight * 0.5f, -rigidBodyBoundsZ - wallThickness * 0.5f, rigidBodyBoundsX * 2.f, wallHeight, wallThickness);
+        ofDrawBox(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f, wallThickness, wallHeight, rigidBodyBoundsZ * 2.f);
+        ofDrawBox(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f, wallThickness, wallHeight, rigidBodyBoundsZ * 2.f);
+        ofPopStyle();
+
+        ofPushStyle();
+        ofSetColor(100, 200, 160, 200);
+        ofDrawBox(goalCenter.x, rigidBodyFloorY + 1.5f, goalCenter.z, goalSize, 3.f, goalSize);
+        ofPopStyle();
+
+        ofPushStyle();
+        ofSetLineWidth(2.f);
+        ofSetColor(255, 236, 120, 160);
+        ofDrawLine(dropperX, rigidBodyFloorY + 1.f, dropperZ, dropperX, dropperSpawnHeight - 14.f, dropperZ);
+        ofPopStyle();
+
+        ofPushMatrix();
+        ofTranslate(dropperX, dropperSpawnHeight, dropperZ);
+        ofPushStyle();
+        ofSetColor(250, 210, 70, 220);
+        ofDrawBox(0.f, 0.f, 0.f, 36.f, 12.f, 36.f);
+        ofPopStyle();
+        ofPopMatrix();
+
+        for (const auto& box : rigidBodies) {
+                ofPushMatrix();
+                ofMatrix4x4 transform = buildTransformMatrix(box.body.getOrientation(), box.body.getPosition());
+                ofMultMatrix(transform);
+
+                ofPushStyle();
+                ofColor drawColor = box.color;
+                if (box.reachedGoal) {
+                        drawColor = box.color.getLerped(ofColor::white, 0.4f);
+                } else if (box.outOfBounds) {
+                        drawColor = ofColor(80, 80, 80, 140);
+                }
+                ofSetColor(drawColor);
+
+                if (drawRigidBodyWireframe) {
+                        ofNoFill();
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                        ofFill();
+                } else {
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                }
+                ofPopStyle();
+                ofPopMatrix();
+        }
+
+        rigidBodyCamera.end();
+        ofDisableDepthTest();
+}
+
+//--------------------------------------------------------------
+void ofApp::setRigidBodyMovementKey(int key, bool isPressed)
+{
+        if (activeScene != SceneType::Phase3Game)
+                return;
+
+        switch (key) {
+        case OF_KEY_LEFT:
+                moveDropperLeft = isPressed;
+                break;
+        case OF_KEY_RIGHT:
+                moveDropperRight = isPressed;
+                break;
+        case OF_KEY_UP:
+                moveDropperForward = isPressed;
+                break;
+        case OF_KEY_DOWN:
+                moveDropperBackward = isPressed;
+                break;
+        }
+
+        if (key >= 0 && key <= std::numeric_limits<unsigned char>::max()) {
+                int lowered = std::tolower(static_cast<unsigned char>(key));
+                switch (lowered) {
+                case 'q':
+                case 'a':
+                        moveDropperLeft = isPressed;
+                        break;
+                case 'd':
+                        moveDropperRight = isPressed;
+                        break;
+                case 'z':
+                case 'w':
+                        moveDropperForward = isPressed;
+                        break;
+                case 's':
+                        moveDropperBackward = isPressed;
+                        break;
+                }
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::clearRigidBodyMovementKeys()
+{
+        moveDropperLeft = false;
+        moveDropperRight = false;
+        moveDropperForward = false;
+        moveDropperBackward = false;
 }
 
 //--------------------------------------------------------------

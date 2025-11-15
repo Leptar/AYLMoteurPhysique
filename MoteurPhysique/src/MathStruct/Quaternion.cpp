@@ -139,3 +139,7 @@ float Quaternion::dot(const Quaternion& b) const {
 Quaternion Quaternion::operator+(const Quaternion & b) const{
 	return Quaternion(w + b.w, x + b.x, y + b.y, z + b.z);
 }
+
+Quaternion Quaternion::operator*(float s) const {
+	return Quaternion(w * s, x * s, y * s, z * s);
+}

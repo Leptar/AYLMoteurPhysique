@@ -33,6 +33,7 @@ public:
 
 	// --- Opérations statiques ---
 	Quaternion operator+(const Quaternion& b) const;
+	Quaternion operator*(float s) const;
 
 
 	// --- Interpolation ---
