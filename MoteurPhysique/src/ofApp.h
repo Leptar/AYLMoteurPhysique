@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Blob.h"
+#include "CorpsRigide/CorpsRigide.h"
 #include "ForceGenerator/ParticuleForceRegistry.h"
 #include "ofMain.h"
 #include "Projectile.h"
@@ -29,7 +30,7 @@ class ofApp : public ofBaseApp{
                 void gotMessage(ofMessage msg);
         private:
                 /// Machine à états simple qui identifie la démonstration active.
-                enum class SceneType { Phase1Projectiles, Phase2Blob };
+                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game };
 
                 /// Applique toutes les forces configurées aux projectiles actifs avant de les intégrer.
                 void updateProjectiles(float dt);
@@ -43,7 +44,6 @@ class ofApp : public ofBaseApp{
                 void setBlobMovementKey(int key, bool isPressed);
                 /// Réinitialise tous les indicateurs de déplacement du blob, typiquement lors d'un changement de scène.
                 void clearBlobMovementKeys();
-
                 std::vector<Projectile> projectiles;
                 std::map<ProjectileType, ProjectileConfig> projectileConfigs;
 
@@ -52,6 +52,71 @@ class ofApp : public ofBaseApp{
 
                 Blob blob;
                 ofRectangle blobBounds;
+
+                struct RigidBodyBox {
+                        CorpsRigide body;
+                        Vector3D halfExtents;
+                        float mass = 1.f;
+                        ofColor color = ofColor::white;
+                        float boundingRadius = 1.f;
+                        bool reachedGoal = false;
+                        bool outOfBounds = false;
+                };
+
+                std::vector<RigidBodyBox> rigidBodies;
+                ofEasyCam rigidBodyCamera;
+
+                /// Initialise la scène du jeu (phase 3) et peuple les corps rigides.
+                void setupRigidBodyGame();
+                /// Fait progresser la simulation du mini-jeu de la phase 3.
+                void updateRigidBodyGame(float dt);
+                /// Dessine l'aire de jeu ainsi que les corps rigides actifs.
+                void drawRigidBodyGame();
+                /// Crée un pavé rigide à la position donnée et l'ajoute à la scène.
+                void spawnRigidBody(const Vector3D& position,
+                                    const Vector3D& halfExtents,
+                                    float mass,
+                                    const ofColor& color,
+                                    const Vector3D& initialLinearVelocity = Vector3D(),
+                                    const Vector3D& initialAngularVelocity = Vector3D());
+                /// Fait apparaître un nouveau pavé à la position du distributeur contrôlé par le joueur.
+                void spawnRigidBodyFromDropper();
+                /// Replace la scène du jeu dans son état initial.
+                void resetRigidBodyGame();
+                /// Applique les contraintes de l'aire de jeu au corps spécifié.
+                void applyRigidBodyBounds(RigidBodyBox& box);
+                /// Met à jour l'état de la zone de but pour le corps donné.
+                void handleRigidBodyGoal(RigidBodyBox& box);
+                /// Suit les entrées clavier propres au distributeur de la phase 3.
+                void setRigidBodyMovementKey(int key, bool isPressed);
+                /// Réinitialise les indicateurs de déplacement du distributeur de la phase 3.
+                void clearRigidBodyMovementKeys();
+
+                Vector3D rigidBodyGravity = Vector3D(0.f, -9.81f, 0.f);
+                float rigidBodyFloorY = -220.f;
+                float rigidBodyBoundsX = 320.f;
+                float rigidBodyBoundsZ = 320.f;
+                float rigidBodyBounce = 0.55f;
+                float rigidBodyFloorFriction = 0.8f;
+                Vector3D goalCenter = Vector3D(0.f, -220.f, -80.f);
+                float goalSize = 160.f;
+
+                float dropperX = 0.f;
+                float dropperZ = 0.f;
+                float dropperSpeed = 220.f;
+                float dropperSpawnHeight = 260.f;
+
+                bool moveDropperLeft = false;
+                bool moveDropperRight = false;
+                bool moveDropperForward = false;
+                bool moveDropperBackward = false;
+
+                bool applyGravityRigidBodies = true;
+                bool drawRigidBodyWireframe = false;
+
+                int rigidBodyScore = 0;
+                int rigidBodyLost = 0;
+                int totalRigidBodySpawned = 0;
 
                 SceneType activeScene = SceneType::Phase1Projectiles;
 
