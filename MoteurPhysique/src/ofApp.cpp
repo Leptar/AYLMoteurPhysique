@@ -13,6 +13,7 @@
 #include <cctype>
 #include <limits>
 #include <sstream>
+#include <utility>
 
 namespace {
 ofColor backgroundTop(12, 16, 32);
@@ -506,59 +507,16 @@ void ofApp::setupRigidBodyGame()
         rigidBodyCamera.lookAt(glm::vec3(0.f, rigidBodyFloorY + 80.f, 0.f));
         rigidBodyCamera.setAutoDistance(false);
 
-        resetRigidBodyGame();
+        performRigidBodyGameReset();
 }
 
 //--------------------------------------------------------------
-void ofApp::resetRigidBodyGame()
-{
-        rigidBodies.clear();
-        rigidBodies.reserve(48);
-
-        rigidBodyScore = 0;
-        rigidBodyLost = 0;
-        totalRigidBodySpawned = 0;
-
-        dropperX = 0.f;
-        dropperZ = 0.f;
-        clearRigidBodyMovementKeys();
-
-        goalCenter.y = rigidBodyFloorY;
-
-        for (int i = 0; i < 30; ++i) {
-                Vector3D halfExtents(
-                        ofRandom(14.f, 24.f),
-                        ofRandom(12.f, 26.f),
-                        ofRandom(14.f, 24.f));
-                float mass = ofClamp((halfExtents.x + halfExtents.y + halfExtents.z) * 0.18f, 1.5f, 5.5f);
-
-                Vector3D position(
-                        ofRandom(-rigidBodyBoundsX * 0.7f, rigidBodyBoundsX * 0.7f),
-                        dropperSpawnHeight + ofRandom(-40.f, 40.f),
-                        ofRandom(-rigidBodyBoundsZ * 0.7f, rigidBodyBoundsZ * 0.7f));
-
-                ofColor color = ofColor::fromHsb(ofRandom(30, 200), 200, 235);
-
-                Vector3D initialVel(
-                        ofRandom(-45.f, 45.f),
-                        ofRandom(-25.f, 25.f),
-                        ofRandom(-45.f, 45.f));
-                Vector3D angularVel(
-                        ofRandom(-1.8f, 1.8f),
-                        ofRandom(-1.8f, 1.8f),
-                        ofRandom(-1.8f, 1.8f));
-
-                spawnRigidBody(position, halfExtents, mass, color, initialVel, angularVel);
-        }
-}
-
-//--------------------------------------------------------------
-void ofApp::spawnRigidBody(const Vector3D& position,
-                           const Vector3D& halfExtents,
-                           float mass,
-                           const ofColor& color,
-                           const Vector3D& initialLinearVelocity,
-                           const Vector3D& initialAngularVelocity)
+ofApp::RigidBodyBox ofApp::createRigidBodyBox(const Vector3D& position,
+                                              const Vector3D& halfExtents,
+                                              float mass,
+                                              const ofColor& color,
+                                              const Vector3D& initialLinearVelocity,
+                                              const Vector3D& initialAngularVelocity)
 {
         RigidBodyBox box;
         box.mass = std::max(mass, 0.1f);
@@ -601,8 +559,64 @@ void ofApp::spawnRigidBody(const Vector3D& position,
         box.body.setVelociteAngulaire(initialAngularVelocity);
         box.body.clearAccumulators();
 
-        rigidBodies.push_back(box);
+        return box;
+}
+
+//--------------------------------------------------------------
+void ofApp::addRigidBodyBox(RigidBodyBox&& box)
+{
+        rigidBodies.push_back(std::move(box));
         ++totalRigidBodySpawned;
+}
+
+//--------------------------------------------------------------
+void ofApp::performRigidBodyGameReset()
+{
+        rigidBodies.clear();
+        rigidBodies.reserve(48);
+        pendingRigidBodySpawns.clear();
+
+        rigidBodyScore = 0;
+        rigidBodyLost = 0;
+        totalRigidBodySpawned = 0;
+
+        dropperX = 0.f;
+        dropperZ = 0.f;
+        clearRigidBodyMovementKeys();
+
+        goalCenter.y = rigidBodyFloorY;
+
+        for (int i = 0; i < 30; ++i) {
+                Vector3D halfExtents(
+                        ofRandom(14.f, 24.f),
+                        ofRandom(12.f, 26.f),
+                        ofRandom(14.f, 24.f));
+                float mass = ofClamp((halfExtents.x + halfExtents.y + halfExtents.z) * 0.18f, 1.5f, 5.5f);
+
+                Vector3D position(
+                        ofRandom(-rigidBodyBoundsX * 0.7f, rigidBodyBoundsX * 0.7f),
+                        dropperSpawnHeight + ofRandom(-40.f, 40.f),
+                        ofRandom(-rigidBodyBoundsZ * 0.7f, rigidBodyBoundsZ * 0.7f));
+
+                ofColor color = ofColor::fromHsb(ofRandom(30, 200), 200, 235);
+
+                Vector3D initialVel(
+                        ofRandom(-45.f, 45.f),
+                        ofRandom(-25.f, 25.f),
+                        ofRandom(-45.f, 45.f));
+                Vector3D angularVel(
+                        ofRandom(-1.8f, 1.8f),
+                        ofRandom(-1.8f, 1.8f),
+                        ofRandom(-1.8f, 1.8f));
+
+                addRigidBodyBox(createRigidBodyBox(position, halfExtents, mass, color, initialVel, angularVel));
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::resetRigidBodyGame()
+{
+        rigidBodyResetRequested = true;
 }
 
 //--------------------------------------------------------------
@@ -626,12 +640,24 @@ void ofApp::spawnRigidBodyFromDropper()
                 ofRandom(-2.f, 2.f),
                 ofRandom(-2.f, 2.f));
 
-        spawnRigidBody(position, halfExtents, mass, color, initialVel, angularVel);
+        pendingRigidBodySpawns.push_back(createRigidBodyBox(position, halfExtents, mass, color, initialVel, angularVel));
 }
 
 //--------------------------------------------------------------
 void ofApp::updateRigidBodyGame(float dt)
 {
+        if (rigidBodyResetRequested) {
+                performRigidBodyGameReset();
+                rigidBodyResetRequested = false;
+        }
+
+        if (!pendingRigidBodySpawns.empty()) {
+                for (RigidBodyBox& box : pendingRigidBodySpawns) {
+                        addRigidBodyBox(std::move(box));
+                }
+                pendingRigidBodySpawns.clear();
+        }
+
         if (dt <= 0.f) {
                 return;
         }
