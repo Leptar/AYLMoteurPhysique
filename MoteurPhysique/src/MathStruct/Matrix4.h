@@ -25,6 +25,6 @@ public:
 	Matrix4 Identity() const {return Matrix4(1.f);}
 	Matrix4 inverse() const;
 
-	void SetRotation(Matrix3& m_rotation);
-	void SetPosition(Vector3D& m_position);
+        void SetRotation(const Matrix3& rotation);
+        void SetPosition(const Vector3D& position);
 };

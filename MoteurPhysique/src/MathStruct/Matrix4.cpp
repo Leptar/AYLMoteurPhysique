@@ -131,29 +131,23 @@ Matrix4 Matrix4::inverse() const {
     ) / det;
 }
 
-void Matrix4::SetRotation(Matrix3& m_rotation) {
-	Matrix3 m_transfo_linear(m[0], m[1], m[2],
-							m[4], m[5], m[6],
-							m[8], m[9], m[10]);
-	m_transfo_linear = m_transfo_linear * m_rotation;
-
-	m[0] = m_transfo_linear.m[0];
-	m[1] = m_transfo_linear.m[1];
-	m[2] = m_transfo_linear.m[2];
-	m[4] = m_transfo_linear.m[4];
-	m[5] = m_transfo_linear.m[5];
-	m[6] = m_transfo_linear.m[6];
-	m[8] = m_transfo_linear.m[8];
-	m[9] = m_transfo_linear.m[9];
-	m[10] = m_transfo_linear.m[10];
-
+void Matrix4::SetRotation(const Matrix3& rotation) {
+        m[0] = rotation(0, 0);
+        m[1] = rotation(1, 0);
+        m[2] = rotation(2, 0);
+        m[4] = rotation(0, 1);
+        m[5] = rotation(1, 1);
+        m[6] = rotation(2, 1);
+        m[8] = rotation(0, 2);
+        m[9] = rotation(1, 2);
+        m[10] = rotation(2, 2);
 }
 
-void Matrix4::SetPosition(Vector3D & m_position)
+void Matrix4::SetPosition(const Vector3D& position)
 {
-	m[3] = m_position.x;
-	m[7] = m_position.y;
-	m[11] = m_position.z;
+        m[3] = position.x;
+        m[7] = position.y;
+        m[11] = position.z;
 }
 
 
