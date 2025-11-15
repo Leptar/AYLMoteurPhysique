@@ -80,6 +80,10 @@ void ofApp::setup(){
         forces[ForceType::Gravity] = std::make_unique<ForceGravity>();
         forces[ForceType::Friction] = std::make_unique<ForceFriction>();
 
+        rigidBodyGravityForce = std::make_unique<RigidBodyForceGravity>(rigidBodyGravity);
+        rigidBodyGravityForce->setEnabled(applyGravityRigidBodies);
+        physicsWorld.getRigidBodyForceRegistry()->add(rigidBodyGravityForce.get());
+
         float marginX = 120.f;
         float marginY = 140.f;
         blobBounds = ofRectangle(marginX, marginY, std::max(200.f, ofGetWidth() - 2 * marginX), std::max(220.f, ofGetHeight() - 2 * marginY));
@@ -99,6 +103,11 @@ void ofApp::update(){
 
         if (dt <= 0.f) {
                 return;
+        }
+
+        if (rigidBodyGravityForce) {
+                rigidBodyGravityForce->setGravity(rigidBodyGravity);
+                rigidBodyGravityForce->setEnabled(applyGravityRigidBodies);
         }
 
         switch (activeScene) {
@@ -595,9 +604,7 @@ void ofApp::updateRigidBodyGame(float dt)
                         continue;
                 }
 
-                if (applyGravityRigidBodies && box.mass > 0.f) {
-                        box.body.addForce(rigidBodyGravity.scalar(box.mass));
-                }
+                physicsWorld.applyRigidBodyForces(box.body, dt);
 
                 box.body.integrer(dt);
 

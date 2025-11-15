@@ -4,6 +4,7 @@
 #include "../MathStruct/3DVector.h"
 #include "../particule.h"
 #include "../ForceGenerator/ParticuleForceRegistry.h"
+#include "../ForceGenerator/RigidBodyForceRegistry.h"
 #include "../SystemeCollision/SystemCollisionDetection.h"
 #include "RigidBodyBox.h"
 
@@ -28,6 +29,17 @@ public:
      * @brief Donne accès au registre des forces pour y lier des générateurs.
      */
     ParticuleForceRegistry* getForceRegistry();
+
+    /**
+     * @brief Donne accès au registre des forces appliquées aux corps rigides.
+     */
+    RigidBodyForceRegistry* getRigidBodyForceRegistry();
+    const RigidBodyForceRegistry* getRigidBodyForceRegistry() const;
+
+    /**
+     * @brief Applique toutes les forces enregistrées au corps rigide donné.
+     */
+    void applyRigidBodyForces(CorpsRigide& body, float deltaTime) const;
 
     /**
      * @brief Donne accès au système de détection pour y ajouter
@@ -57,5 +69,6 @@ private:
     std::vector<Particule*> m_particules;
 
     ParticuleForceRegistry m_forceRegistry;
+    RigidBodyForceRegistry m_rigidBodyForceRegistry;
     SystemCollisionDetection m_collisionDetector;
 };

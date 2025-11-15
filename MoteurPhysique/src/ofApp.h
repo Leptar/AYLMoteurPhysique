@@ -2,6 +2,7 @@
 
 #include "Blob.h"
 #include "ForceGenerator/ParticuleForceRegistry.h"
+#include "ForceGenerator/RigidBodyForceGravity.h"
 #include "World/RigidBodyBox.h"
 #include "World/World.h"
 #include "ofMain.h"
@@ -108,6 +109,7 @@ class ofApp : public ofBaseApp{
                 int rigidBodyLost = 0;
                 int totalRigidBodySpawned = 0;
 
+                std::unique_ptr<RigidBodyForceGravity> rigidBodyGravityForce;
                 World physicsWorld;
 
                 SceneType activeScene = SceneType::Phase1Projectiles;

@@ -46,6 +46,21 @@ ParticuleForceRegistry* World::getForceRegistry()
     return &m_forceRegistry;
 }
 
+RigidBodyForceRegistry* World::getRigidBodyForceRegistry()
+{
+    return &m_rigidBodyForceRegistry;
+}
+
+const RigidBodyForceRegistry* World::getRigidBodyForceRegistry() const
+{
+    return &m_rigidBodyForceRegistry;
+}
+
+void World::applyRigidBodyForces(CorpsRigide& body, float deltaTime) const
+{
+    m_rigidBodyForceRegistry.updateForces(body, deltaTime);
+}
+
 SystemCollisionDetection* World::getCollisionDetector()
 {
     return &m_collisionDetector;
