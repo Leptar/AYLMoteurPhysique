@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "ofMath.h"
+#include "ofMathConstants.h"
 
 #include "../MathStruct/Quaternion.h"
 
