@@ -1,9 +1,11 @@
 #pragma once
 
 #include <vector>
+#include "../MathStruct/3DVector.h"
 #include "../particule.h"
 #include "../ForceGenerator/ParticuleForceRegistry.h"
 #include "../SystemeCollision/SystemCollisionDetection.h"
+#include "RigidBodyBox.h"
 
 class World
 {
@@ -32,6 +34,24 @@ public:
      * des contraintes (tiges, câbles, plans).
      */
     SystemCollisionDetection* getCollisionDetector();
+
+    /**
+     * @brief Crée et configure un pavé rigide prêt à être simulé.
+     */
+    RigidBodyBox createRigidBodyBox(const Vector3D& position,
+                                    const Vector3D& halfExtents,
+                                    float mass,
+                                    const ofColor& color,
+                                    const Vector3D& initialLinearVelocity = Vector3D(),
+                                    const Vector3D& initialAngularVelocity = Vector3D()) const;
+
+    /**
+     * @brief Génère une collection de pavés rigides aléatoires pour initialiser la scène du jeu.
+     */
+    std::vector<RigidBodyBox> createRigidBodyGame(int boxCount,
+                                                  float dropperSpawnHeight,
+                                                  float boundsX,
+                                                  float boundsZ) const;
 
 private:
     std::vector<Particule*> m_particules;

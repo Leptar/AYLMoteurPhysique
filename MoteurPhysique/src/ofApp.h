@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Blob.h"
-#include "CorpsRigide/CorpsRigide.h"
 #include "ForceGenerator/ParticuleForceRegistry.h"
+#include "World/RigidBodyBox.h"
+#include "World/World.h"
 #include "ofMain.h"
 #include "Projectile.h"
 
@@ -53,16 +54,6 @@ class ofApp : public ofBaseApp{
                 Blob blob;
                 ofRectangle blobBounds;
 
-                struct RigidBodyBox {
-                        CorpsRigide body;
-                        Vector3D halfExtents;
-                        float mass = 1.f;
-                        ofColor color = ofColor::white;
-                        float boundingRadius = 1.f;
-                        bool reachedGoal = false;
-                        bool outOfBounds = false;
-                };
-
                 std::vector<RigidBodyBox> rigidBodies;
                 std::vector<RigidBodyBox> pendingRigidBodySpawns;
                 ofEasyCam rigidBodyCamera;
@@ -70,13 +61,6 @@ class ofApp : public ofBaseApp{
 
                 /// Initialise la scène du jeu (phase 3) et peuple les corps rigides.
                 void setupRigidBodyGame();
-                /// Construit et retourne un corps rigide prêt à être ajouté à la scène.
-                RigidBodyBox createRigidBodyBox(const Vector3D& position,
-                                               const Vector3D& halfExtents,
-                                               float mass,
-                                               const ofColor& color,
-                                               const Vector3D& initialLinearVelocity = Vector3D(),
-                                               const Vector3D& initialAngularVelocity = Vector3D());
                 /// Ajoute un corps rigide actif et met à jour les compteurs associés.
                 void addRigidBodyBox(RigidBodyBox&& box);
                 /// Effectue immédiatement la réinitialisation de la scène du jeu.
@@ -123,6 +107,8 @@ class ofApp : public ofBaseApp{
                 int rigidBodyScore = 0;
                 int rigidBodyLost = 0;
                 int totalRigidBodySpawned = 0;
+
+                World physicsWorld;
 
                 SceneType activeScene = SceneType::Phase1Projectiles;
 
