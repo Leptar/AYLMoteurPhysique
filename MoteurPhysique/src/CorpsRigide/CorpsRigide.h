@@ -7,55 +7,68 @@
 
 class CorpsRigide
 {
+public:
+    CorpsRigide();
+
+    // Paramétrage masse / inertie
+    void setInverseMasse(float invMasse);                 // 1/m (0 => immobile)
+    float getInverseMasse() const;
+
+    void setInverseInertiaTensorBody(const Matrix3& invIbody);
+    const Matrix3& getInverseInertiaTensorWorld() const;
+
+    // État linéaire
+    void setPosition(const Vector3D& p);
+    void setVelocite(const Vector3D& v);
+
+    Vector3D getPosition() const;
+    Vector3D getVelocite() const;
+
+    // État angulaire
+    void setOrientation(const Quaternion& q);
+    void setVelociteAngulaire(const Vector3D& w);
+
+    Quaternion getOrientation() const;
+    Vector3D   getVelociteAngulaire() const;
+
+    // Matrice de transform (pour l'affichage)
+    const Matrix4& getTransformMatrix() const;
+
+    // Gestion des forces et torques
+    void addForce(const Vector3D& force);                 // au centre de masse
+    void addForceAtPoint(const Vector3D& force,
+                         const Vector3D& pointWorld);     // point en coordonnées monde
+    void clearAccumulators();
+
+    // Intégration (une étape de simulation)
+    void integrer(float deltaTime);
+
 private:
-    // Etat
+    // État linéaire
     Vector3D m_position;
     Vector3D m_velocite;
-    float    m_inverseMasse;
+    float    m_inverseMasse;   // 1 / masse
 
+    // État angulaire
     Quaternion m_orientation;
-    Vector3D   m_velociteAngulaire;
+    Vector3D   m_velociteAngulaire; // omega
 
-    // Propriétés physiques
-    Matrix3  m_inverseInertiaTensorBody;
+    // Inertie
+    Matrix3 m_inverseInertiaTensorBody;   // dans l'espace corps
+    Matrix3 m_inverseInertiaTensorWorld;  // dans l'espace monde
+
+    // Amortissement
     float m_linearDamping;
     float m_angularDamping;
 
-    // Forces
+    // Accumulateurs de forces / torques
     Vector3D m_forceAccum;
     Vector3D m_torqueAccum;
 
-    // Jeu de tir ballistique
+    // Matrice de transform pour le rendu
     Matrix4 m_transformMatrix;
-    Matrix3 m_inverseInertiaTensorWorld;
 
-    // Pour chaque frame
+    // Helpers internes
     void _updateTransformMatrix();
     void _updateInverseInertiaTensorWorld();
-
-public:
-    CorpsRigide();
-    // Setters
-    void setPosition(const Vector3D& pos);
-    void setVelocite(const Vector3D& vel);
-    void setMasse(float masse);
-    void setOrientation(const Quaternion& q);
-    void setVelociteAngulaire(const Vector3D& velAng);
-
-    void setInverseInertiaTensorBody(const Matrix3& tensor);
-    void setLinearDamping(float damping);
-    void setAngularDamping(float damping);
-
-    // Getters
-    Vector3D getPosition();
-    Quaternion getOrientation();
-    const Matrix4& getTransformMatrix();
-
-    // Gestion des forces et torques
-    void addForce(const Vector3D& force); // Centre de masse
-    void addForceAtPoint(const Vector3D& force, const Vector3D& worldPoint); // Coordonnées dans le monde (Force externe appliquée n'importe où sur le corps)
-    void clearAccumulators();
-
-    // Integrer
-    void integrer(float deltaTime);
 };
