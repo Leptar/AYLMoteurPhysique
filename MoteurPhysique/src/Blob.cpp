@@ -1,6 +1,6 @@
 #include "Blob.h"
 
-#include "3DVector.h"
+#include "MathStruct/3DVector.h"
 #include "ofGraphics.h"
 #include "ofUtils.h"
 
