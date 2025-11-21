@@ -22,7 +22,7 @@ public:
 
 	Matrix4 transpose() const;
 	float   determinant() const;
-	Matrix4 Identity() const {return Matrix4(1.f);}
+	static Matrix4 Identity() {return Matrix4(1.f);}
 	Matrix4 inverse() const;
 
         void SetRotation(const Matrix3& rotation);
