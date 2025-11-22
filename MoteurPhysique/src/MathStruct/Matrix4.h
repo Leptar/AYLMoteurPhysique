@@ -16,6 +16,7 @@ public:
 
 
 	Matrix4 operator*(const Matrix4& B) const;
+	Vector3D operator* (const Vector3D& B) const;
 	Matrix4 operator-(const Matrix4 & B) const;
 	Matrix4 operator+(const Matrix4 & B) const;
 	Matrix4 operator/(const float & scalar) const;

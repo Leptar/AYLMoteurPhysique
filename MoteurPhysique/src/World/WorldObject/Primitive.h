@@ -1,8 +1,9 @@
 #pragma once    
 #include "CorpsRigide.h"
 
-struct Primitive
+class Primitive
 {
+public:
     // Lien entre physique et collision
     CorpsRigide* corpsRigide;
     

@@ -57,6 +57,15 @@ Matrix4 Matrix4::operator*(const Matrix4 & B) const {
 	return C;
 }
 
+Vector3D Matrix4::operator*(const Vector3D& B) const
+{
+	Vector3D result;
+	result.x = m[0] * B.x + m[4] * B.y + m[8] * B.z + m[12];
+	result.y = m[1] * B.x + m[5] * B.y + m[9] * B.z + m[13];
+	result.z = m[2] * B.x + m[6] * B.y + m[10] * B.z + m[14];
+	return result;
+}
+
 Matrix4 Matrix4::transpose() const {
 
 	return Matrix4(
