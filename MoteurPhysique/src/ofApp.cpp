@@ -501,6 +501,7 @@ void ofApp::clearBlobMovementKeys()
 //--------------------------------------------------------------
 void ofApp::setupRigidBodyGame()
 {
+	
         rigidBodyCamera.setNearClip(0.1f);
         rigidBodyCamera.setFarClip(4000.f);
         rigidBodyCamera.setPosition(0.f, 360.f, 620.f);

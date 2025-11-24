@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Box.h"
 #include "../CorpsRigide/CorpsRigide.h"
 #include "ofColor.h"
 
@@ -12,5 +13,6 @@ struct RigidBodyBox
         float boundingRadius = 1.f;
         bool reachedGoal = false;
         bool outOfBounds = false;
+		Primitive* primitive = new Box(halfExtents);
 };
 
