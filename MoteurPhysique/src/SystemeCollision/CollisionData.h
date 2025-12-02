@@ -33,4 +33,6 @@ public:
     void remove(const Contact& contact);
     void clear();
     
+
 };
+

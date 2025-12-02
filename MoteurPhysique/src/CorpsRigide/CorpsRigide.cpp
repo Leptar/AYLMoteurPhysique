@@ -1,5 +1,9 @@
 #include "CorpsRigide.h"
 #include <cmath>
+#include <algorithm> // Pour std::min et std::max
+#include "WorldObject/Primitive.h"
+#include "WorldObject/Box.h"
+#include "WorldObject/Sphere.h"
 
 CorpsRigide::CorpsRigide() :
     m_position(0.f, 0.f, 0.f),
@@ -13,7 +17,8 @@ CorpsRigide::CorpsRigide() :
     m_angularDamping(0.99f),
     m_forceAccum(0.f, 0.f, 0.f),
     m_torqueAccum(0.f, 0.f, 0.f),
-    m_transformMatrix()
+    m_transformMatrix(),
+    worldAABB()
 {
     _updateTransformMatrix();
     _updateInverseInertiaTensorWorld();
@@ -122,6 +127,64 @@ void CorpsRigide::clearAccumulators()
 {
     m_forceAccum  = Vector3D(0.f, 0.f, 0.f);
     m_torqueAccum = Vector3D(0.f, 0.f, 0.f);
+}
+
+// --- Collision ---
+
+void CorpsRigide::calculateWorldAABB(const Primitive& primitive)
+{
+    AABB localAABB;
+
+    // On utilise dynamic_cast pour déterminer le type de primitive et obtenir sa AABB locale.
+    if (const Box* box = dynamic_cast<const Box*>(&primitive))
+    {
+        localAABB.min = box->HalfExtent.scalar(-1.f);
+        localAABB.max = box->HalfExtent;
+    }
+    else if (const Sphere* sphere = dynamic_cast<const Sphere*>(&primitive))
+    {
+        localAABB.min = Vector3D(-sphere->radius, -sphere->radius, -sphere->radius);
+        localAABB.max = Vector3D( sphere->radius,  sphere->radius,  sphere->radius);
+    }
+    else
+    {
+        // Type de primitive non géré, on laisse une AABB nulle.
+        worldAABB = AABB();
+        return;
+    }
+
+    // On récupère les 8 coins de la AABB locale
+    Vector3D corners[8];
+    corners[0] = Vector3D(localAABB.min.x, localAABB.min.y, localAABB.min.z);
+    corners[1] = Vector3D(localAABB.max.x, localAABB.min.y, localAABB.min.z);
+    corners[2] = Vector3D(localAABB.min.x, localAABB.max.y, localAABB.min.z);
+    corners[3] = Vector3D(localAABB.max.x, localAABB.max.y, localAABB.min.z);
+    corners[4] = Vector3D(localAABB.min.x, localAABB.min.y, localAABB.max.z);
+    corners[5] = Vector3D(localAABB.max.x, localAABB.min.y, localAABB.max.z);
+    corners[6] = Vector3D(localAABB.min.x, localAABB.max.y, localAABB.max.z);
+    corners[7] = Vector3D(localAABB.max.x, localAABB.max.y, localAABB.max.z);
+
+    // On transforme chaque coin dans l'espace monde
+    for (int i = 0; i < 8; ++i)
+    {
+        corners[i] = m_transformMatrix * corners[i];
+    }
+
+    // On trouve les nouvelles bornes min/max pour créer la AABB monde
+    Vector3D min = corners[0];
+    Vector3D max = corners[0];
+
+    for (int i = 1; i < 8; ++i)
+    {
+        min.x = std::min(min.x, corners[i].x);
+        min.y = std::min(min.y, corners[i].y);
+        min.z = std::min(min.z, corners[i].z);
+
+        max.x = std::max(max.x, corners[i].x);
+        max.y = std::max(max.y, corners[i].y);
+        max.z = std::max(max.z, corners[i].z);
+    }
+    worldAABB = AABB(min, max);
 }
 
 // --- Helpers internes ---
