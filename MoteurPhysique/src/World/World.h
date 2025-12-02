@@ -9,6 +9,7 @@
 #include "../ForceGenerator/RigidBodyForceRegistry.h"
 #include "../SystemeCollision/SystemCollisionDetection.h"
 #include "RigidBodyBox.h"
+#include "SystemeCollisionDetection.h"
 
 class World
 {
@@ -74,6 +75,9 @@ private:
     RigidBodyForceRegistry m_rigidBodyForceRegistry;
     SystemCollisionDetection m_collisionDetector;
 
+	// Systeme de collision
+	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
+	
 	// Le monde possède les corps rigides
 	std::vector<RigidBodyBox*> m_rigidBodies;
 

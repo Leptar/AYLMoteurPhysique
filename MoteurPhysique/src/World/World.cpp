@@ -23,6 +23,7 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
+	collisionSystem = std::make_unique<SystemeCollisionDetection>();
 }
 
 World::~World()
@@ -185,11 +186,17 @@ void World::broadPhaseDetection() {
 
 
 	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
+	narrowPhaseDetection(potentialCollisions);
+	
 	std::cout << "Collisions potentielles cette frame: " << potentialCollisions.size() << std::endl;
 
 }
 
-void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions) {}
+void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions)
+{
+	// TODO : parcourir les pairs, verfier les collisions et les ajouter puis resoudre les collisions
+	 
+}
 
 void World::update(float deltaTime)
 {
@@ -212,7 +219,6 @@ void World::update(float deltaTime)
 	}
 
 	broadPhaseDetection();
-
 	// TODO : phase restreinte et resolution
 
 	for (auto& bodybox : m_rigidBodies) {

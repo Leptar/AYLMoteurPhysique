@@ -1,12 +1,14 @@
 #include "SystemCollisionDetection.h"
 
 // Inclusions pour accéder aux membres internes des classes utilisées
+#include "SystemeCollisionDetection.h"
+
 #include "../World/RigidBodyBox.h" 
 #include "../MathStruct/Matrix4.h" 
 #include "../MathStruct/3DVector.h"
 #include <cmath>
 
-void SystemCollisionDetection::genererContactsBoitePlan(
+void SystemeCollisionDetection::genererContactsBoitePlan(
     RigidBodyBox* boite, 
     const Plan& plan, 
     CollisionData* data)
@@ -19,7 +21,7 @@ void SystemCollisionDetection::genererContactsBoitePlan(
 
     // 2. Transformation (Locale -> Monde)
     // On récupère la transformation du CorpsRigide contenu dans la boîte
-    Matrix4 transform = boite->body.getTransform(); 
+    Matrix4 transform = boite->body.getTransformMatrix(); 
 
     // 3. Définition des 8 sommets LOCAUX
     Vector3D localSommets[8] = {
@@ -62,7 +64,7 @@ void SystemCollisionDetection::genererContactsBoitePlan(
             
             // Le point de contact est la projection du sommet sur le plan
             // R = Q - t * n (puisque t est la distance signée)
-            nouveauContact.contactPoint = Q - (plan.normale * t);
+            nouveauContact.contactPoint = Q - plan.normale.scalar(t);
             
             // La pénétration est la valeur absolue de t
             nouveauContact.penetration = -t;
