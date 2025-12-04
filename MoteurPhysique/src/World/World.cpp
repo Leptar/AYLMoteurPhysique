@@ -194,9 +194,41 @@ void World::broadPhaseDetection() {
 
 void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions)
 {
-	// TODO : parcourir les pairs, verfier les collisions et les ajouter puis resoudre les collisions
-	 
+    // 1. On vide les collisions de la frame précédente
+    if (collisionSystem) {
+        collisionSystem->clear();
+    } else {
+        return;
+    }
+
+    // 2. On parcourt toutes les paires renvoyées par la Broad Phase
+    for (const auto& pair : potentialCollisions)
+    {
+        Primitive* p1 = pair.first;
+        Primitive* p2 = pair.second;
+
+        if (!p1 || !p2) continue;
+
+        // 3. Identification des types (RTTI)
+        // On essaie de caster p1 et p2 en Box ou Plane
+        Box* box1 = dynamic_cast<Box*>(p1);
+        Box* box2 = dynamic_cast<Box*>(p2);
+        Plane* plane1 = dynamic_cast<Plane*>(p1);
+        Plane* plane2 = dynamic_cast<Plane*>(p2);
+
+        // --- Cas : Boîte vs Plan ---
+        if (box1 && plane2)
+        {
+            collisionSystem->DetectBoxPlane(box1, plane2);
+        }
+        else if (plane1 && box2)
+        {
+            // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
+            collisionSystem->DetectBoxPlane(box2, plane1);
+        }
+    }
 }
+
 
 void World::update(float deltaTime)
 {
