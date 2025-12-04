@@ -221,12 +221,6 @@ std::size_t SystemeCollisionDetection::count() const
     return detectedCollisions.size();
 }
 
-bool SystemeCollisionDetection::IsColliding(Primitive* p1, Primitive* p2)
-{
-    if (!p1 || !p2) return false;
-    return false; 
-}
-
 void SystemeCollisionDetection::addRodConstraint(Primitive* p1, Primitive* p2, float length)
 {
     if (!p1 || !p2) return;

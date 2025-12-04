@@ -32,9 +32,7 @@ public:
     void resolveAll(); 
     
     std::size_t count() const;
-    
-    static bool IsColliding(Primitive* p1, Primitive* p2);
-    
+        
     void addRodConstraint(Primitive* p1, Primitive* p2, float length);
     void addCableConstraint(Primitive* p1, Primitive* p2, float maxLength, float restitution);
 
