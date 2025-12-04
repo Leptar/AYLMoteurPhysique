@@ -1,16 +1,12 @@
 #pragma once
 #include <vector>
 #include "CollisionData.h"
+#include "SystemCollisionDetection.h"
 #include "../World/WorldObject/Primitive.h"
 #include "../World/WorldObject/Box.h"
 #include "../World/WorldObject/Plane.h"
 #include "../CorpsRigide/CorpsRigide.h"
 
-// Note : Si CollisionType est utilisé dans la struct Contact (dans CollisionData.h), 
-// il devrait idéalement être défini là-bas. Sinon, on le garde ici.
-enum class CollisionType {
-    Contact, Resting, Cable, Rod
-};
 
 class SystemeCollisionDetection
 {
@@ -20,9 +16,9 @@ public:
     SystemeCollisionDetection() = default;
     ~SystemeCollisionDetection() = default;
 
-    void add(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, CollisionType type);
+    void add(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type);
 
-    void addPlane(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, CollisionType type);
+    void addPlane(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type);
     
     void remove(const Contact& contact);
     

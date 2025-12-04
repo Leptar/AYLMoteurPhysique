@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "CorpsRigide.h"
+#include "SystemCollisionDetection.h"
 
 /*
  * Classe pour le traitement des collisions de la phase 4
@@ -15,6 +16,7 @@ struct Contact
     float restitution; // coefficient de rebond (0 = inélastique, 1 = élastique)
     float friction;
     Vector3D contactPoint;
+    collision_type type;
 
     bool equal(const CorpsRigide* comp_c1, const CorpsRigide* comp_c2) const
     {
