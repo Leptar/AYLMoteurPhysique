@@ -229,7 +229,6 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
     }
 }
 
-
 void World::update(float deltaTime)
 {
 	// Particule

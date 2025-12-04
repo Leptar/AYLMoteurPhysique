@@ -6,7 +6,6 @@
 /*
  * Classe pour le traitement des collisions de la phase 4
  */
-
 struct Contact
 {
     CorpsRigide* c1;

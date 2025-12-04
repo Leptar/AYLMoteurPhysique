@@ -68,8 +68,152 @@ void SystemeCollisionDetection::clear()
 
 void SystemeCollisionDetection::resolveAll()
 {
-    // À IMPLEMENTER : RÉSOLUTION DES CONTACTS (IMPULSIONS ANGULAIRES ET LINÉAIRES)
-    // On parcourt detectedCollisions et on applique les impulsions sur c1 et c2
+    if (detectedCollisions.empty()) return;
+
+    // 1. Résolution de l'Interpénétration (Correction de Position)
+    // On sépare les objets pour qu'ils ne soient plus l'un dans l'autre
+    for (auto& contact : detectedCollisions)
+    {
+        CorpsRigide* bodyA = contact.c1;
+        CorpsRigide* bodyB = contact.c2;
+
+        // On ignore si aucun corps n'est présent
+        if (!bodyA && !bodyB) continue;
+        if (contact.penetration <= 0) continue;
+
+        float invMassA = bodyA ? bodyA->getInverseMasse() : 0.0f;
+        float invMassB = bodyB ? bodyB->getInverseMasse() : 0.0f;
+        float totalInvMass = invMassA + invMassB;
+
+        // Si masse infinie pour les deux (ex: deux objets statiques), pas de déplacement
+        if (totalInvMass <= 0) continue; 
+
+        // La correction est proportionnelle à la masse inverse (l'objet léger bouge plus)
+        Vector3D movePerIMass = contact.contactNormal.scalar(contact.penetration / totalInvMass);
+        
+        if (bodyA) {
+            // A recule (inverse de la normale)
+            Vector3D posChange = movePerIMass.scalar(invMassA).scalar(-1.0f); 
+            bodyA->setPosition(bodyA->getPosition() + posChange);
+        }
+        if (bodyB) {
+            // B avance (sens de la normale)
+            Vector3D posChange = movePerIMass.scalar(invMassB);
+            bodyB->setPosition(bodyB->getPosition() + posChange);
+        }
+    }
+
+    // 2. Résolution des Vélocités (Impulsions)
+    // On applique des forces instantanées pour faire rebondir les objets
+    for (auto& contact : detectedCollisions)
+    {
+        CorpsRigide* bodyA = contact.c1;
+        CorpsRigide* bodyB = contact.c2;
+
+        float invMassA = bodyA ? bodyA->getInverseMasse() : 0.0f;
+        float invMassB = bodyB ? bodyB->getInverseMasse() : 0.0f;
+        float totalInvMass = invMassA + invMassB;
+
+        if (totalInvMass <= 0) continue;
+
+        // --- Calcul des propriétés relatives ---
+        
+        // Vecteurs position relative (Centre de masse -> Point de contact)
+        Vector3D rA = bodyA ? (contact.contactPoint - bodyA->getPosition()) : Vector3D(0,0,0);
+        Vector3D rB = bodyB ? (contact.contactPoint - bodyB->getPosition()) : Vector3D(0,0,0);
+
+        // Tenseurs d'inertie inverses en monde (Matrix3)
+        // Utilisation de la méthode spécifique de ta classe CorpsRigide
+        Matrix3 iITWorldA = bodyA ? bodyA->getInverseInertiaTensorWorld() : Matrix3();
+        Matrix3 iITWorldB = bodyB ? bodyB->getInverseInertiaTensorWorld() : Matrix3();
+
+        // --- Calcul de la vitesse de fermeture ---
+
+        // Vitesse au point de contact = V_lineaire + (V_angulaire x R)
+        Vector3D velA = bodyA ? (bodyA->getVelocite() + bodyA->getVelociteAngulaire().cross(rA)) : Vector3D(0,0,0);
+        Vector3D velB = bodyB ? (bodyB->getVelocite() + bodyB->getVelociteAngulaire().cross(rB)) : Vector3D(0,0,0);
+
+        // Vitesse relative (B - A)
+        Vector3D relativeVelocity = velB - velA;
+
+        // Vitesse le long de la normale de contact
+        float separatingVelocity = relativeVelocity.dot(contact.contactNormal);
+
+        // Si les objets s'éloignent déjà, on ne fait rien
+        if (separatingVelocity > 0)
+        {
+            continue;
+        }
+
+        // --- Calcul de l'Impulsion scalaire (j) ---
+
+        // Nouvelle vitesse de séparation désirée
+        // j = -(1 + e) * v_rel
+        float newSepVelocity = -separatingVelocity * (1.0f + contact.restitution);
+
+        // Check pour éviter la micro-vibration au repos (resting contact)
+        // Si la vitesse est très faible, on annule le rebond
+        // On approxime la vitesse induite par l'accélération (gravité) sur une frame
+        // Pour l'instant, seuil simple :
+        if (std::abs(separatingVelocity) < 0.2f) 
+        {
+            newSepVelocity = 0.0f; 
+        }
+
+        float deltaVelocity = newSepVelocity - separatingVelocity;
+
+        // Dénominateur de l'impulsion (Masse linéaire + Masse angulaire)
+        // angularComponent = (r x n) . (I^-1 * (r x n))
+        float angularEffectA = 0;
+        float angularEffectB = 0;
+
+        if (bodyA) {
+            Vector3D torquePerUnitImpulse = rA.cross(contact.contactNormal);
+            Vector3D rotationPerUnitImpulse = iITWorldA * torquePerUnitImpulse;
+            angularEffectA = rotationPerUnitImpulse.dot(torquePerUnitImpulse);
+        }
+
+        if (bodyB) {
+            Vector3D torquePerUnitImpulse = rB.cross(contact.contactNormal);
+            Vector3D rotationPerUnitImpulse = iITWorldB * torquePerUnitImpulse;
+            angularEffectB = rotationPerUnitImpulse.dot(torquePerUnitImpulse);
+        }
+
+        float totalInverseMass = totalInvMass + angularEffectA + angularEffectB;
+
+        // Impulsion finale j
+        float impulseScalar = deltaVelocity / totalInverseMass;
+        
+        Vector3D impulse = contact.contactNormal.scalar(impulseScalar);
+
+        // --- Application de l'Impulsion ---
+        // ATTENTION : CorpsRigide n'a pas de addVelocite, on utilise get + set
+
+        if (bodyA)
+        {
+            // Vitesse Linéaire : v_new = v_old - (P * invMass)
+            Vector3D deltaV = impulse.scalar(-invMassA);
+            bodyA->setVelocite(bodyA->getVelocite() + deltaV);
+            
+            // Vitesse Angulaire : w_new = w_old - (I^-1 * (r x P))
+            Vector3D impulsiveTorque = rA.cross(impulse);
+            Vector3D angularChange = iITWorldA * impulsiveTorque;
+            // On inverse le signe car impulse est négatif pour A (3ème loi de Newton)
+            bodyA->setVelociteAngulaire(bodyA->getVelociteAngulaire() + angularChange.scalar(-1.0f));
+        }
+
+        if (bodyB)
+        {
+            // Vitesse Linéaire : v_new = v_old + (P * invMass)
+            Vector3D deltaV = impulse.scalar(invMassB);
+            bodyB->setVelocite(bodyB->getVelocite() + deltaV);
+
+            // Vitesse Angulaire : w_new = w_old + (I^-1 * (r x P))
+            Vector3D impulsiveTorque = rB.cross(impulse);
+            Vector3D angularChange = iITWorldB * impulsiveTorque;
+            bodyB->setVelociteAngulaire(bodyB->getVelociteAngulaire() + angularChange);
+        }
+    }
 }
 
 std::size_t SystemeCollisionDetection::count() const
