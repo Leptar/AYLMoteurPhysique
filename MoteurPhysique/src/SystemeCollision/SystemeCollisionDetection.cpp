@@ -187,7 +187,6 @@ void SystemeCollisionDetection::resolveAll()
         Vector3D impulse = contact.contactNormal.scalar(impulseScalar);
 
         // --- Application de l'Impulsion ---
-        // ATTENTION : CorpsRigide n'a pas de addVelocite, on utilise get + set
 
         if (bodyA)
         {
