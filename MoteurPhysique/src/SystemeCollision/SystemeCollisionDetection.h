@@ -15,7 +15,6 @@ enum class CollisionType {
 class SystemeCollisionDetection
 {
 public:
-    // Stockage des contacts au lieu de "Collision"
     std::vector<Contact> detectedCollisions;
 
     SystemeCollisionDetection() = default;
