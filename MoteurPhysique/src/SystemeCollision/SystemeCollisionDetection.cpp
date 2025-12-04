@@ -1,7 +1,7 @@
 #include "SystemeCollisionDetection.h"
 #include <algorithm>
 
-void SystemeCollisionDetection::add(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, CollisionType type)
+void SystemeCollisionDetection::add(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type)
 {
     if (!p1 || !p2) return;
 
@@ -20,12 +20,12 @@ void SystemeCollisionDetection::add(Primitive* p1, Primitive* p2, const Vector3D
     contact.friction = 0.5f; 
 
     // Note : Si tu veux stocker le CollisionType, il faudra l'ajouter dans la struct Contact.
-    // contact.type = type; 
+    contact.type = type; 
 
     detectedCollisions.push_back(contact);
 }
 
-void SystemeCollisionDetection::addPlane(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, CollisionType type)
+void SystemeCollisionDetection::addPlane(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type)
 {
     if (!p1 || !p2) return;
 
@@ -39,7 +39,7 @@ void SystemeCollisionDetection::addPlane(Primitive* p1, Primitive* p2, const Vec
     contact.restitution = restitution;
     contact.friction = 0.5f; // Valeur par défaut
 
-    // contact.type = type;
+    contact.type = type;
 
     detectedCollisions.push_back(contact);
 }
@@ -236,7 +236,7 @@ void SystemeCollisionDetection::addRodConstraint(Primitive* p1, Primitive* p2, f
     contact.c2 = p2->corpsRigide;
     
     // Note : Sans le champ 'type' dans Contact, le résolveur ne saura pas que c'est une tige.
-    // contact.type = CollisionType::Rod;
+    contact.type = collision_type::Rod;
     
     contact.friction = 0.0f;
     contact.restitution = 0.0f;
@@ -255,7 +255,7 @@ void SystemeCollisionDetection::addCableConstraint(Primitive* p1, Primitive* p2,
     contact.restitution = restitution;
     contact.friction = 0.0f;
     
-    // contact.type = CollisionType::Cable;
+    contact.type = collision_type::Cable;
 
     detectedCollisions.push_back(contact);
 }
@@ -313,7 +313,7 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
             Vector3D contactPoint = vertexWorld - displacement;
 
             // Ajout via addPlane
-            addPlane(box, plane, contactPoint, planeNormalWorld, -t, 0.5f, CollisionType::Contact);
+            addPlane(box, plane, contactPoint, planeNormalWorld, -t, 0.5f, collision_type::Contact);
         }
     }
 }

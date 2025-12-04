@@ -2,7 +2,7 @@
 #include <vector>
 #include "particule.h"
 
-enum class CollisionType {
+enum class collision_type {
     Contact, Resting, Cable, Rod
 };
 
@@ -12,7 +12,7 @@ struct Collision {
     Vector3D contactNormal; // direction de la réaction (du point de vue p1)
     float penetration; // profondeur d’interpénétration
     float restitution; // coefficient de rebond (0 = inélastique, 1 = élastique)
-    CollisionType type;
+    collision_type type;
     
     bool equal(const Particule* comp_p1, const Particule* comp_p2) const {
         return p1 == comp_p1 && p2 == comp_p2;
@@ -25,8 +25,8 @@ class SystemCollisionDetection
 public:
     std::vector<Collision> detectedCollisions;
 
-    void add(Particule* p1, Particule* p2, float restitution, CollisionType type);
-    void addPlane(Particule* p1, const Vector3D& normal, float penetration, float restitution, CollisionType type);
+    void add(Particule* p1, Particule* p2, float restitution, collision_type type);
+    void addPlane(Particule* p1, const Vector3D& normal, float penetration, float restitution, collision_type type);
     void remove(const Collision& collision);
     bool empty() const;
     void clear();

@@ -2,7 +2,7 @@
 
 #include "SystemCollisionResolve.h"
 
-void SystemCollisionDetection::add(Particule* p1, Particule* p2, float restitution, CollisionType type)
+void SystemCollisionDetection::add(Particule* p1, Particule* p2, float restitution, collision_type type)
 {
     if (p1 == nullptr || p2 == nullptr)
         return;
@@ -15,7 +15,7 @@ void SystemCollisionDetection::add(Particule* p1, Particule* p2, float restituti
     detectedCollisions.push_back({p1, p2, directionCollision, penetration, restitution, type});
 }
 
-void SystemCollisionDetection::addPlane(Particule* p1, const Vector3D& normal, float penetration, float restitution, CollisionType type)
+void SystemCollisionDetection::addPlane(Particule* p1, const Vector3D& normal, float penetration, float restitution, collision_type type)
 {
     if (p1 == nullptr || penetration <= 0.f)
         return;
@@ -46,13 +46,13 @@ void SystemCollisionDetection::resolveAll()
     {
         switch (collision.type)
         {
-        case CollisionType::Contact:
-        case CollisionType::Resting:
+        case collision_type::Contact:
+        case collision_type::Resting:
             SystemCollisionResolve::resolve(collision);
             break;
 
-        case CollisionType::Cable:
-        case CollisionType::Rod:
+        case collision_type::Cable:
+        case collision_type::Rod:
             SystemCollisionResolve::resolveConstraint(collision);
             break;
         }
@@ -95,7 +95,7 @@ void SystemCollisionDetection::addRodConstraint(Particule* p1, Particule* p2, fl
     Collision c;
     c.p1 = p1;
     c.p2 = p2;
-    c.type = CollisionType::Rod;
+    c.type = collision_type::Rod;
     c.restitution = 0.0f;
 
     if (currentLength > length) {
@@ -121,7 +121,7 @@ void SystemCollisionDetection::addCableConstraint(Particule* p1, Particule* p2, 
     Collision c;
     c.p1 = p1;
     c.p2 = p2;
-    c.type = CollisionType::Cable;
+    c.type = collision_type::Cable;
     c.restitution = restitution;
     c.contactNormal = delta.normalize();
     c.penetration = currentLength - maxLength;
