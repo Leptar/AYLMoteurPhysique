@@ -212,7 +212,13 @@ void World::broadPhaseDetection() {
                         continue;
                 }
 
-                std::vector<Primitive*> condidates = m_octree->request(sphereBounds[primitiveA]);
+                auto boundsIt = sphereBounds.find(primitiveA);
+                if (boundsIt == sphereBounds.end())
+                {
+                        continue;
+                }
+
+                std::vector<Primitive*> condidates = m_octree->request(boundsIt->second);
 
                 for (Primitive* primitiveB : condidates) {
                         if (primitiveA < primitiveB) {
@@ -319,6 +325,7 @@ void World::stepRigidBodies(std::vector<RigidBodyBox>& rigidBodies,
     // Ajuste dynamiquement les limites de l'octree pour inclure tous les corps
     // simulés, même s'ils ont quitté le volume de base.
     AABB expandedBounds = worldBounds;
+    bool hasBodies = false;
     for (const auto& entry : m_rigidBodies)
     {
         if (!entry || !entry->primitive)
@@ -328,15 +335,25 @@ void World::stepRigidBodies(std::vector<RigidBodyBox>& rigidBodies,
 
         Vector3D center = entry->body.getPosition();
         float radius = entry->boundingRadius;
-        expandedBounds.min.x = std::min(expandedBounds.min.x, center.x - radius);
-        expandedBounds.min.y = std::min(expandedBounds.min.y, center.y - radius);
-        expandedBounds.min.z = std::min(expandedBounds.min.z, center.z - radius);
-        expandedBounds.max.x = std::max(expandedBounds.max.x, center.x + radius);
-        expandedBounds.max.y = std::max(expandedBounds.max.y, center.y + radius);
-        expandedBounds.max.z = std::max(expandedBounds.max.z, center.z + radius);
+
+        if (!hasBodies)
+        {
+            expandedBounds.min = center - Vector3D(radius, radius, radius);
+            expandedBounds.max = center + Vector3D(radius, radius, radius);
+            hasBodies = true;
+        }
+        else
+        {
+            expandedBounds.min.x = std::min(expandedBounds.min.x, center.x - radius);
+            expandedBounds.min.y = std::min(expandedBounds.min.y, center.y - radius);
+            expandedBounds.min.z = std::min(expandedBounds.min.z, center.z - radius);
+            expandedBounds.max.x = std::max(expandedBounds.max.x, center.x + radius);
+            expandedBounds.max.y = std::max(expandedBounds.max.y, center.y + radius);
+            expandedBounds.max.z = std::max(expandedBounds.max.z, center.z + radius);
+        }
     }
 
-    m_worldBounds = expandedBounds;
+    m_worldBounds = hasBodies ? expandedBounds : worldBounds;
 
     // Broad puis narrow phase pour les collisions dynamique-dynamique
     broadPhaseDetection();
