@@ -14,6 +14,8 @@ public:
 
     std::vector<Primitive*> request(const AABB& otherBounds);
 
+    void collectDebugNodes(std::vector<AABB>& nodes) const;
+
     bool containsEntiraly(const AABB& other) const;
 private:
     // Position du sommet AABB min(minx, miny, minz) et max(maxx, maxy, maxz)

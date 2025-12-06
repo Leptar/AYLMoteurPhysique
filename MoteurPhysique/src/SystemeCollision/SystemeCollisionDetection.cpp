@@ -213,6 +213,8 @@ void SystemeCollisionDetection::resolveAll()
             bodyB->setVelociteAngulaire(bodyB->getVelociteAngulaire() + angularChange);
         }
     }
+
+    detectedCollisions.clear();
 }
 
 std::size_t SystemeCollisionDetection::count() const
@@ -309,4 +311,33 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
             addPlane(box, plane, contactPoint, planeNormalWorld, -t, 0.5f, collision_type::Contact);
         }
     }
+}
+
+void SystemeCollisionDetection::DetectBoxBox(Box* boxA, Box* boxB)
+{
+    if (!boxA || !boxB || !boxA->corpsRigide || !boxB->corpsRigide)
+    {
+        return;
+    }
+
+    Vector3D posA = boxA->corpsRigide->getPosition();
+    Vector3D posB = boxB->corpsRigide->getPosition();
+
+    float radiusA = boxA->HalfExtent.GetNorm();
+    float radiusB = boxB->HalfExtent.GetNorm();
+
+    Vector3D delta = posB - posA;
+    float distance = delta.GetNorm();
+    float combinedRadius = radiusA + radiusB;
+
+    if (distance <= 1e-4f || distance > combinedRadius)
+    {
+        return;
+    }
+
+    Vector3D normal = delta.scalar(1.f / distance);
+    float penetration = combinedRadius - distance;
+    Vector3D contactPoint = posA + normal.scalar(radiusA - penetration * 0.5f);
+
+    add(boxA, boxB, contactPoint, normal, penetration, 0.45f, collision_type::Contact);
 }

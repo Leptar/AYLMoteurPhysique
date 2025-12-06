@@ -23,7 +23,8 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
-	collisionSystem = std::make_unique<SystemeCollisionDetection>();
+collisionSystem = std::make_unique<SystemeCollisionDetection>();
+        m_worldBounds = AABB(Vector3D(-400.f, -600.f, -400.f), Vector3D(400.f, 600.f, 400.f));
 }
 
 World::~World()
@@ -116,6 +117,8 @@ RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
     box.body.setVelociteAngulaire(initialAngularVelocity);
     box.body.clearAccumulators();
 
+    box.syncPrimitive();
+
     return box;
 }
 
@@ -160,36 +163,35 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
 }
 
 void World::broadPhaseDetection() {
-	// Construire l'octree
-	m_octree = std::make_unique<Octree>(m_worldBounds);
+// Construire l'octree
+m_octree = std::make_unique<Octree>(m_worldBounds);
 
-	// MAJ AABB et insert dans le octree
-	for (auto & body_box : m_rigidBodies) {
-		body_box->body.calculateWorldAABB(*body_box->primitive);
-		m_octree->insert(body_box->primitive, body_box->body.worldAABB);
-	}
+// MAJ AABB et insert dans le octree
+for (auto & body_box : m_rigidBodies) {
+body_box->body.calculateWorldAABB(*body_box->primitive);
+m_octree->insert(body_box->primitive.get(), body_box->body.worldAABB);
+}
 
-	// Genere les pairs potentielles
-	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
+// Genere les pairs potentielles
+        std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
 
-	for (auto& body_boxA : m_rigidBodies) {
-		Primitive* primitiveA = body_boxA->primitive;
+        for (auto& body_boxA : m_rigidBodies) {
+                Primitive* primitiveA = body_boxA->primitive.get();
 
-		std::vector<Primitive*> condidates = m_octree->request(body_boxA->body.worldAABB);
+                std::vector<Primitive*> condidates = m_octree->request(body_boxA->body.worldAABB);
 
-		for (Primitive* primitiveB : condidates) {
-			if (primitiveA < primitiveB) {
-				potentialCollisions.push_back(std::make_pair(primitiveA, primitiveB));
-			}
-		}
-	}
+                for (Primitive* primitiveB : condidates) {
+                        if (primitiveA < primitiveB) {
+                                potentialCollisions.push_back(std::make_pair(primitiveA, primitiveB));
+                        }
+                }
+        }
 
 
-	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
-	narrowPhaseDetection(potentialCollisions);
-	
-	std::cout << "Collisions potentielles cette frame: " << potentialCollisions.size() << std::endl;
+// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
+narrowPhaseDetection(potentialCollisions);
 
+lastPotentialPairs = potentialCollisions;
 }
 
 void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions)
@@ -226,6 +228,19 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
             // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
             collisionSystem->DetectBoxPlane(box2, plane1);
         }
+        else if (box1 && box2)
+        {
+            collisionSystem->DetectBoxBox(box1, box2);
+        }
+    }
+
+    // Collisions des boîtes contre les plans statiques
+    for (auto* body : m_rigidBodies)
+    {
+        for (auto& plane : m_staticPlanes)
+        {
+            collisionSystem->DetectBoxPlane(body->primitive.get(), plane.get());
+        }
     }
 }
 
@@ -243,17 +258,98 @@ void World::update(float deltaTime)
     m_collisionDetector.resolveAll();
 
 	// CorpsRigide
-	for (auto& bodybox : m_rigidBodies) {
-		applyRigidBodyForces(bodybox->body, deltaTime);
+for (auto& bodybox : m_rigidBodies) {
+applyRigidBodyForces(bodybox->body, deltaTime);
 
-		bodybox->body.integrer(deltaTime);
-	}
+bodybox->body.integrer(deltaTime);
+}
 
-	broadPhaseDetection();
-	// TODO : phase restreinte et resolution
+broadPhaseDetection();
+// TODO : phase restreinte et resolution
 
-	for (auto& bodybox : m_rigidBodies) {
-		bodybox->body.clearAccumulators();
-	}
+for (auto& bodybox : m_rigidBodies) {
+bodybox->body.clearAccumulators();
+}
 
+}
+
+void World::simulateRigidBodies(std::vector<RigidBodyBox>& bodies, float deltaTime)
+{
+    if (deltaTime <= 0.f)
+    {
+        return;
+    }
+
+    m_rigidBodies.clear();
+    m_rigidBodies.reserve(bodies.size());
+
+    for (auto& bodyBox : bodies)
+    {
+        bodyBox.syncPrimitive();
+        m_rigidBodies.push_back(&bodyBox);
+    }
+
+    for (auto* bodyBox : m_rigidBodies)
+    {
+        applyRigidBodyForces(bodyBox->body, deltaTime);
+        bodyBox->body.integrer(deltaTime);
+        bodyBox->body.calculateWorldAABB(*bodyBox->primitive);
+    }
+
+    broadPhaseDetection();
+
+    lastContacts = collisionSystem ? collisionSystem->detectedCollisions : std::vector<Contact>();
+    if (collisionSystem)
+    {
+        collisionSystem->resolveAll();
+        collisionSystem->clear();
+    }
+
+    for (auto* bodyBox : m_rigidBodies)
+    {
+        bodyBox->body.clearAccumulators();
+    }
+}
+
+void World::setWorldBounds(const AABB& bounds)
+{
+    m_worldBounds = bounds;
+}
+
+void World::configureBoundaries(float floorY, float boundsX, float boundsZ)
+{
+    m_staticPlanes.clear();
+    m_staticBodies.clear();
+
+    auto createPlane = [&](const Vector3D& normal, const Vector3D& position)
+    {
+        auto body = std::make_unique<CorpsRigide>();
+        body->setInverseMasse(0.f);
+        body->setPosition(position);
+
+        auto plane = std::make_unique<Plane>();
+        plane->normal = normal;
+        plane->PlaneOffset = 0.f;
+        plane->corpsRigide = body.get();
+        plane->offset = Matrix4::Identity();
+
+        m_staticBodies.push_back(std::move(body));
+        m_staticPlanes.push_back(std::move(plane));
+    };
+
+    createPlane(Vector3D(0.f, 1.f, 0.f), Vector3D(0.f, floorY, 0.f));
+    createPlane(Vector3D(0.f, 0.f, 1.f), Vector3D(0.f, 0.f, -boundsZ));
+    createPlane(Vector3D(0.f, 0.f, -1.f), Vector3D(0.f, 0.f, boundsZ));
+    createPlane(Vector3D(1.f, 0.f, 0.f), Vector3D(-boundsX, 0.f, 0.f));
+    createPlane(Vector3D(-1.f, 0.f, 0.f), Vector3D(boundsX, 0.f, 0.f));
+}
+
+std::vector<AABB> World::getOctreeDebugBounds() const
+{
+    std::vector<AABB> nodes;
+    if (m_octree)
+    {
+        m_octree->collectDebugNodes(nodes);
+    }
+    return nodes;
 }

@@ -159,3 +159,21 @@ bool Octree::containsEntiraly(const AABB& other) const
 {
     return Area.contains(other);
 }
+
+void Octree::collectDebugNodes(std::vector<AABB>& nodes) const
+{
+    nodes.push_back(Area);
+
+    if (!bHasBeenSubdivide)
+    {
+        return;
+    }
+
+    for (const auto& child : children)
+    {
+        if (child)
+        {
+            child->collectDebugNodes(nodes);
+        }
+    }
+}
