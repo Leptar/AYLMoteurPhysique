@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Octree.h"
+
 #include <vector>
 #include "../MathStruct/3DVector.h"
 #include "../particule.h"
@@ -7,6 +9,7 @@
 #include "../ForceGenerator/RigidBodyForceRegistry.h"
 #include "../SystemeCollision/SystemCollisionDetection.h"
 #include "RigidBodyBox.h"
+#include "SystemeCollisionDetection.h"
 
 class World
 {
@@ -71,4 +74,20 @@ private:
     ParticuleForceRegistry m_forceRegistry;
     RigidBodyForceRegistry m_rigidBodyForceRegistry;
     SystemCollisionDetection m_collisionDetector;
+
+	// Systeme de collision
+	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
+	
+	// Le monde possède les corps rigides
+	std::vector<RigidBodyBox*> m_rigidBodies;
+
+	// L'Octree, reconstruit à chaque frame
+	std::unique_ptr<Octree> m_octree;
+
+	// Les limites de l'espace de simulation
+	AABB m_worldBounds;
+
+	// Méthodes privées pour la détection de collision
+	void broadPhaseDetection();
+	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
 };

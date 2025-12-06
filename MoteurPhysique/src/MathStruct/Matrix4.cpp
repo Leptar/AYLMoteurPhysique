@@ -57,13 +57,13 @@ Matrix4 Matrix4::operator*(const Matrix4 & B) const {
 	return C;
 }
 
-Vector3D Matrix4::operator*(const Vector3D& v) const {
-	// Transforme le vecteur comme un point homog\u00e8ne (w=1)
-	// Matrix4 est en column-major: m[c*4 + r]
-	float x = m[0] * v.x + m[4] * v.y + m[8]  * v.z + m[12];
-	float y = m[1] * v.x + m[5] * v.y + m[9]  * v.z + m[13];
-	float z = m[2] * v.x + m[6] * v.y + m[10] * v.z + m[14];
-	return Vector3D(x, y, z);
+Vector3D Matrix4::operator*(const Vector3D& B) const
+{
+	Vector3D result;
+	result.x = m[0] * B.x + m[4] * B.y + m[8] * B.z + m[12];
+	result.y = m[1] * B.x + m[5] * B.y + m[9] * B.z + m[13];
+	result.z = m[2] * B.x + m[6] * B.y + m[10] * B.z + m[14];
+	return result;
 }
 
 Matrix4 Matrix4::transpose() const {

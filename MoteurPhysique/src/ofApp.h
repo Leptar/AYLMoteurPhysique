@@ -5,6 +5,8 @@
 #include "ForceGenerator/RigidBodyForceGravity.h"
 #include "World/RigidBodyBox.h"
 #include "World/World.h"
+#include "SystemeCollision/CollisionWorld.h"
+#include "SystemeCollision/CollisionPrimitive.h"
 #include "ofMain.h"
 #include "Projectile.h"
 
@@ -32,7 +34,7 @@ class ofApp : public ofBaseApp{
                 void gotMessage(ofMessage msg);
         private:
                 /// Machine à états simple qui identifie la démonstration active.
-                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game };
+                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game, Phase4Collision };
 
                 /// Applique toutes les forces configurées aux projectiles actifs avant de les intégrer.
                 void updateProjectiles(float dt);
@@ -83,6 +85,15 @@ class ofApp : public ofBaseApp{
                 /// Réinitialise les indicateurs de déplacement du distributeur de la phase 3.
                 void clearRigidBodyMovementKeys();
 
+                /// Initialise la scène de collision (phase 4) avec octree et visualisation.
+                void setupCollisionScene();
+                /// Fait progresser la simulation de collision de la phase 4.
+                void updateCollisionScene(float dt);
+                /// Dessine la scène de collision avec l'octree et les corps rigides.
+                void drawCollisionScene();
+                /// Dessine l'octree de manière récursive pour visualisation.
+                void drawOctreeNode(const Octree* node, int depth = 0);
+
                 Vector3D rigidBodyGravity = Vector3D(0.f, -9.81f, 0.f);
                 float rigidBodyFloorY = -220.f;
                 float rigidBodyBoundsX = 320.f;
@@ -111,6 +122,16 @@ class ofApp : public ofBaseApp{
 
                 std::unique_ptr<RigidBodyForceGravity> rigidBodyGravityForce;
                 World physicsWorld;
+
+                // Phase 4: Collision detection and octree visualization
+                std::unique_ptr<CollisionWorld> collisionWorld;
+                std::vector<CollisionBox> collisionBoxes;
+                std::vector<CollisionPlane> collisionPlanes;
+                ofEasyCam collisionCamera;
+                bool showOctreeVisualization = true;
+                bool showBoundingSpheres = true;
+                bool showCollisionContacts = true;
+                int collisionBoxCount = 10;
 
                 SceneType activeScene = SceneType::Phase1Projectiles;
 

@@ -17,14 +17,14 @@ public:
 
 
 	Matrix4 operator*(const Matrix4& B) const;
-	Vector3D operator*(const Vector3D& v) const;
+	Vector3D operator* (const Vector3D& B) const;
 	Matrix4 operator-(const Matrix4 & B) const;
 	Matrix4 operator+(const Matrix4 & B) const;
 	Matrix4 operator/(const float & scalar) const;
 
 	Matrix4 transpose() const;
 	float   determinant() const;
-	Matrix4 Identity() const {return Matrix4(1.f);}
+	static Matrix4 Identity() {return Matrix4(1.f);}
 	Matrix4 inverse() const;
 
         void SetRotation(const Matrix3& rotation);

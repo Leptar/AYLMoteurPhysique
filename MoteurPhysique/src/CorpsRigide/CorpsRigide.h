@@ -4,6 +4,9 @@
 #include "MathStruct/Quaternion.h"
 #include "MathStruct/Matrix3.h"
 #include "MathStruct/Matrix4.h"
+#include "MathStruct/AABB.h"
+
+class Primitive; // Déclaration avancée pour éviter une dépendance circulaire
 
 class CorpsRigide
 {
@@ -42,6 +45,12 @@ public:
 
     // Intégration (une étape de simulation)
     void integrer(float deltaTime);
+
+    // --- Collision ---
+    // Calcule et met à jour la AABB du corps rigide en coordonnées monde
+    void calculateWorldAABB(const Primitive& primitive);
+
+    AABB worldAABB;
 
 private:
     // État linéaire

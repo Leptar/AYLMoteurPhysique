@@ -23,6 +23,7 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
+	collisionSystem = std::make_unique<SystemeCollisionDetection>();
 }
 
 World::~World()
@@ -158,8 +159,79 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
     return boxes;
 }
 
+void World::broadPhaseDetection() {
+	// Construire l'octree
+	m_octree = std::make_unique<Octree>(m_worldBounds);
+
+	// MAJ AABB et insert dans le octree
+	for (auto & body_box : m_rigidBodies) {
+		body_box->body.calculateWorldAABB(*body_box->primitive);
+		m_octree->insert(body_box->primitive, body_box->body.worldAABB);
+	}
+
+	// Genere les pairs potentielles
+	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
+
+	for (auto& body_boxA : m_rigidBodies) {
+		Primitive* primitiveA = body_boxA->primitive;
+
+		std::vector<Primitive*> condidates = m_octree->request(body_boxA->body.worldAABB);
+
+		for (Primitive* primitiveB : condidates) {
+			if (primitiveA < primitiveB) {
+				potentialCollisions.push_back(std::make_pair(primitiveA, primitiveB));
+			}
+		}
+	}
+
+
+	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
+	narrowPhaseDetection(potentialCollisions);
+	
+	std::cout << "Collisions potentielles cette frame: " << potentialCollisions.size() << std::endl;
+
+}
+
+void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions)
+{
+    // 1. On vide les collisions de la frame précédente
+    if (collisionSystem) {
+        collisionSystem->clear();
+    } else {
+        return;
+    }
+
+    // 2. On parcourt toutes les paires renvoyées par la Broad Phase
+    for (const auto& pair : potentialCollisions)
+    {
+        Primitive* p1 = pair.first;
+        Primitive* p2 = pair.second;
+
+        if (!p1 || !p2) continue;
+
+        // 3. Identification des types (RTTI)
+        // On essaie de caster p1 et p2 en Box ou Plane
+        Box* box1 = dynamic_cast<Box*>(p1);
+        Box* box2 = dynamic_cast<Box*>(p2);
+        Plane* plane1 = dynamic_cast<Plane*>(p1);
+        Plane* plane2 = dynamic_cast<Plane*>(p2);
+
+        // --- Cas : Boîte vs Plan ---
+        if (box1 && plane2)
+        {
+            collisionSystem->DetectBoxPlane(box1, plane2);
+        }
+        else if (plane1 && box2)
+        {
+            // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
+            collisionSystem->DetectBoxPlane(box2, plane1);
+        }
+    }
+}
+
 void World::update(float deltaTime)
 {
+	// Particule
     m_forceRegistry.updateForces(deltaTime);
 
     for (Particule* p : m_particules)
@@ -169,4 +241,19 @@ void World::update(float deltaTime)
     }
 
     m_collisionDetector.resolveAll();
+
+	// CorpsRigide
+	for (auto& bodybox : m_rigidBodies) {
+		applyRigidBodyForces(bodybox->body, deltaTime);
+
+		bodybox->body.integrer(deltaTime);
+	}
+
+	broadPhaseDetection();
+	// TODO : phase restreinte et resolution
+
+	for (auto& bodybox : m_rigidBodies) {
+		bodybox->body.clearAccumulators();
+	}
+
 }

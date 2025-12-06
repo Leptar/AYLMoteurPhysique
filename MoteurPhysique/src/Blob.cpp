@@ -173,7 +173,7 @@ void Blob::detectAndResolveCollisions()
             Particule* b = particles[j].get();
             if (SystemCollisionDetection::IsColliding(a, b)) {
                 // Enregistrer les contacts sphère-sphère avec un léger rebond pour que le blob rebondisse.
-                collisionSystem.add(a, b, 0.25f, CollisionType::Contact);
+                collisionSystem.add(a, b, 0.25f, collision_type::Contact);
                 collidingParticles.insert(a);
                 collidingParticles.insert(b);
             }
@@ -185,22 +185,22 @@ void Blob::detectAndResolveCollisions()
 
         if (p->_pos.y > playArea.getBottom()) {
             // Repousser les particules à l'intérieur de l'aire de jeu grâce à des plans virtuels.
-            collisionSystem.addPlane(p, Vector3D(0.f, -1.f, 0.f), p->_pos.y - playArea.getBottom(), 0.25f, CollisionType::Resting);
+            collisionSystem.addPlane(p, Vector3D(0.f, -1.f, 0.f), p->_pos.y - playArea.getBottom(), 0.25f, collision_type::Resting);
             collidingParticles.insert(p);
         }
 
         if (p->_pos.y < playArea.getTop()) {
-            collisionSystem.addPlane(p, Vector3D(0.f, 1.f, 0.f), playArea.getTop() - p->_pos.y, 0.05f, CollisionType::Contact);
+            collisionSystem.addPlane(p, Vector3D(0.f, 1.f, 0.f), playArea.getTop() - p->_pos.y, 0.05f, collision_type::Contact);
             collidingParticles.insert(p);
         }
 
         if (p->_pos.x < playArea.getLeft()) {
-            collisionSystem.addPlane(p, Vector3D(1.f, 0.f, 0.f), playArea.getLeft() - p->_pos.x, 0.2f, CollisionType::Contact);
+            collisionSystem.addPlane(p, Vector3D(1.f, 0.f, 0.f), playArea.getLeft() - p->_pos.x, 0.2f, collision_type::Contact);
             collidingParticles.insert(p);
         }
 
         if (p->_pos.x > playArea.getRight()) {
-            collisionSystem.addPlane(p, Vector3D(-1.f, 0.f, 0.f), p->_pos.x - playArea.getRight(), 0.2f, CollisionType::Contact);
+            collisionSystem.addPlane(p, Vector3D(-1.f, 0.f, 0.f), p->_pos.x - playArea.getRight(), 0.2f, collision_type::Contact);
             collidingParticles.insert(p);
         }
     }
