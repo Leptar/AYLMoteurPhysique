@@ -3,6 +3,7 @@
 #include "Octree.h"
 
 #include <vector>
+#include <memory>
 #include "../MathStruct/3DVector.h"
 #include "../particule.h"
 #include "../ForceGenerator/ParticuleForceRegistry.h"
@@ -68,6 +69,41 @@ public:
                                                   float boundsX,
                                                   float boundsZ) const;
 
+        /**
+         * @brief Met à jour les limites du monde pour l'octree et les collisions.
+         */
+        void setWorldBounds(const AABB& bounds);
+
+        /**
+         * @brief Réinitialise la liste des corps rigides enregistrés pour la simulation.
+         */
+        void clearRigidBodies();
+
+        /**
+         * @brief Inscrit un corps rigide pour la simulation et prépare sa primitive.
+         */
+        void registerRigidBody(RigidBodyBox& body);
+
+        /**
+         * @brief Synchronise tous les corps rigides actifs avec le système de collision.
+         */
+        void registerRigidBodies(std::vector<RigidBodyBox>& bodies);
+
+        /**
+         * @brief Ajoute un plan statique qui participera aux collisions (sol, murs, etc.).
+         */
+        void addStaticPlane(const Vector3D& normal, float offset);
+
+        /**
+         * @brief Supprime tous les plans statiques précédemment enregistrés.
+         */
+        void clearStaticPlanes();
+
+        /**
+         * @brief Applique les forces, intègre et résout les collisions pour les corps rigides.
+         */
+        void simulateRigidBodies(float deltaTime);
+
 private:
     std::vector<Particule*> m_particules;
 
@@ -75,17 +111,19 @@ private:
     RigidBodyForceRegistry m_rigidBodyForceRegistry;
     SystemCollisionDetection m_collisionDetector;
 
-	// Systeme de collision
-	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
-	
-	// Le monde possède les corps rigides
-	std::vector<RigidBodyBox*> m_rigidBodies;
+        // Systeme de collision
+        std::unique_ptr<SystemeCollisionDetection> collisionSystem;
 
-	// L'Octree, reconstruit à chaque frame
-	std::unique_ptr<Octree> m_octree;
+        // Le monde possède les corps rigides
+        std::vector<RigidBodyBox*> m_rigidBodies;
+        std::vector<std::unique_ptr<Plane>> m_staticPlanes;
+        std::vector<std::unique_ptr<CorpsRigide>> m_staticBodies;
 
-	// Les limites de l'espace de simulation
-	AABB m_worldBounds;
+        // L'Octree, reconstruit à chaque frame
+        std::unique_ptr<Octree> m_octree;
+
+        // Les limites de l'espace de simulation
+        AABB m_worldBounds;
 
 	// Méthodes privées pour la détection de collision
 	void broadPhaseDetection();

@@ -7,6 +7,7 @@
 #include "ForceGenerator/ForceGravity.h"
 #include "Tests/3DVectorTest.h"
 #include "glm/vec3.hpp"
+#include "MathStruct/AABB.h"
 
 #include <algorithm>
 #include <cmath>
@@ -501,12 +502,16 @@ void ofApp::clearBlobMovementKeys()
 //--------------------------------------------------------------
 void ofApp::setupRigidBodyGame()
 {
-	
+
         rigidBodyCamera.setNearClip(0.1f);
         rigidBodyCamera.setFarClip(4000.f);
         rigidBodyCamera.setPosition(0.f, 360.f, 620.f);
         rigidBodyCamera.lookAt(glm::vec3(0.f, rigidBodyFloorY + 80.f, 0.f));
         rigidBodyCamera.setAutoDistance(false);
+
+        physicsWorld.setWorldBounds(
+                AABB(Vector3D(-rigidBodyBoundsX - 40.f, rigidBodyFloorY - 80.f, -rigidBodyBoundsZ - 40.f),
+                     Vector3D(rigidBodyBoundsX + 40.f, dropperSpawnHeight + 140.f, rigidBodyBoundsZ + 40.f)));
 
         performRigidBodyGameReset();
 }
@@ -535,6 +540,13 @@ void ofApp::performRigidBodyGameReset()
         clearRigidBodyMovementKeys();
 
         goalCenter.y = rigidBodyFloorY;
+
+        physicsWorld.clearStaticPlanes();
+        physicsWorld.addStaticPlane(Vector3D(0.f, 1.f, 0.f), rigidBodyFloorY);
+        physicsWorld.addStaticPlane(Vector3D(1.f, 0.f, 0.f), -rigidBodyBoundsX);
+        physicsWorld.addStaticPlane(Vector3D(-1.f, 0.f, 0.f), -rigidBodyBoundsX);
+        physicsWorld.addStaticPlane(Vector3D(0.f, 0.f, 1.f), -rigidBodyBoundsZ);
+        physicsWorld.addStaticPlane(Vector3D(0.f, 0.f, -1.f), -rigidBodyBoundsZ);
 
         auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
         for (auto& box : initialBoxes) {
@@ -600,16 +612,14 @@ void ofApp::updateRigidBodyGame(float dt)
         dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
         dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
 
+        physicsWorld.registerRigidBodies(rigidBodies);
+        physicsWorld.simulateRigidBodies(dt);
+
         for (auto& box : rigidBodies) {
                 if (box.reachedGoal || box.outOfBounds) {
                         continue;
                 }
 
-                physicsWorld.applyRigidBodyForces(box.body, dt);
-
-                box.body.integrer(dt);
-
-                applyRigidBodyBounds(box);
                 handleRigidBodyGoal(box);
 
                 Vector3D position = box.body.getPosition();
@@ -621,62 +631,6 @@ void ofApp::updateRigidBodyGame(float dt)
 }
 
 //--------------------------------------------------------------
-void ofApp::applyRigidBodyBounds(RigidBodyBox& box)
-{
-        Vector3D position = box.body.getPosition();
-        Vector3D velocity = box.body.getVelocite();
-        Vector3D angular = box.body.getVelociteAngulaire();
-
-        float radius = box.boundingRadius;
-        bool touchedFloor = false;
-
-        if (position.y - radius < rigidBodyFloorY) {
-                position.y = rigidBodyFloorY + radius;
-                if (velocity.y < 0.f) {
-                        velocity.y = -velocity.y * rigidBodyBounce;
-                }
-                touchedFloor = true;
-        }
-
-        if (position.x - radius < -rigidBodyBoundsX) {
-                position.x = -rigidBodyBoundsX + radius;
-                if (velocity.x < 0.f) {
-                        velocity.x = -velocity.x * rigidBodyBounce;
-                }
-        } else if (position.x + radius > rigidBodyBoundsX) {
-                position.x = rigidBodyBoundsX - radius;
-                if (velocity.x > 0.f) {
-                        velocity.x = -velocity.x * rigidBodyBounce;
-                }
-        }
-
-        if (position.z - radius < -rigidBodyBoundsZ) {
-                position.z = -rigidBodyBoundsZ + radius;
-                if (velocity.z < 0.f) {
-                        velocity.z = -velocity.z * rigidBodyBounce;
-                }
-        } else if (position.z + radius > rigidBodyBoundsZ) {
-                position.z = rigidBodyBoundsZ - radius;
-                if (velocity.z > 0.f) {
-                        velocity.z = -velocity.z * rigidBodyBounce;
-                }
-        }
-
-        if (touchedFloor) {
-                velocity.x *= rigidBodyFloorFriction;
-                velocity.z *= rigidBodyFloorFriction;
-                angular = angular.scalar(rigidBodyFloorFriction);
-
-                if (std::abs(velocity.x) < 1e-2f) velocity.x = 0.f;
-                if (std::abs(velocity.y) < 1e-2f) velocity.y = 0.f;
-                if (std::abs(velocity.z) < 1e-2f) velocity.z = 0.f;
-        }
-
-        box.body.setPosition(position);
-        box.body.setVelocite(velocity);
-        box.body.setVelociteAngulaire(angular);
-}
-
 //--------------------------------------------------------------
 void ofApp::handleRigidBodyGoal(RigidBodyBox& box)
 {

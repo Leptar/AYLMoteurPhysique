@@ -4,6 +4,8 @@
 #include "../CorpsRigide/CorpsRigide.h"
 #include "ofColor.h"
 
+#include <memory>
+
 struct RigidBodyBox
 {
         CorpsRigide body;
@@ -13,6 +15,7 @@ struct RigidBodyBox
         float boundingRadius = 1.f;
         bool reachedGoal = false;
         bool outOfBounds = false;
-		Primitive* primitive = new Box(halfExtents);
+
+        std::unique_ptr<Box> primitive;
 };
 

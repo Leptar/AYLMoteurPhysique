@@ -74,8 +74,6 @@ class ofApp : public ofBaseApp{
                 void spawnRigidBodyFromDropper();
                 /// Replace la scène du jeu dans son état initial.
                 void resetRigidBodyGame();
-                /// Applique les contraintes de l'aire de jeu au corps spécifié.
-                void applyRigidBodyBounds(RigidBodyBox& box);
                 /// Met à jour l'état de la zone de but pour le corps donné.
                 void handleRigidBodyGoal(RigidBodyBox& box);
                 /// Suit les entrées clavier propres au distributeur de la phase 3.
