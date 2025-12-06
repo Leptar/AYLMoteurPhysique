@@ -19,6 +19,36 @@ Vector3D normalizedAxis(float x, float y, float z)
     return axis.scalar(1.f / norm);
 }
 
+bool computeBoxBoxContact(const AABB& aabbA,
+                          const AABB& aabbB,
+                          const Vector3D& centerA,
+                          const Vector3D& centerB,
+                          Vector3D& outNormal,
+                          float& outPenetration)
+{
+        float overlapX = std::min(aabbA.max.x, aabbB.max.x) - std::max(aabbA.min.x, aabbB.min.x);
+        float overlapY = std::min(aabbA.max.y, aabbB.max.y) - std::max(aabbA.min.y, aabbB.min.y);
+        float overlapZ = std::min(aabbA.max.z, aabbB.max.z) - std::max(aabbA.min.z, aabbB.min.z);
+
+        if (overlapX <= 0.f || overlapY <= 0.f || overlapZ <= 0.f) {
+                return false;
+        }
+
+        outPenetration = overlapX;
+        outNormal = Vector3D((centerB.x >= centerA.x) ? 1.f : -1.f, 0.f, 0.f);
+
+        if (overlapY < outPenetration) {
+                outPenetration = overlapY;
+                outNormal = Vector3D(0.f, (centerB.y >= centerA.y) ? 1.f : -1.f, 0.f);
+        }
+        if (overlapZ < outPenetration) {
+                outPenetration = overlapZ;
+                outNormal = Vector3D(0.f, 0.f, (centerB.z >= centerA.z) ? 1.f : -1.f);
+        }
+
+        return true;
+}
+
 }
 
 World::World()
@@ -309,6 +339,25 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
         {
             // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
             collisionSystem->DetectBoxPlane(box2, plane1);
+        }
+        else if (box1 && box2)
+        {
+                CorpsRigide* bodyA = box1->corpsRigide;
+                CorpsRigide* bodyB = box2->corpsRigide;
+
+                if (!bodyA || !bodyB) {
+                        continue;
+                }
+
+                Vector3D normal;
+                float penetration = 0.f;
+                if (computeBoxBoxContact(bodyA->worldAABB, bodyB->worldAABB,
+                                         bodyA->getPosition(), bodyB->getPosition(),
+                                         normal, penetration))
+                {
+                        Vector3D contactPoint = (bodyA->getPosition() + bodyB->getPosition()).scalar(0.5f);
+                        collisionSystem->add(box1, box2, contactPoint, normal, penetration, 0.35f, collision_type::Contact);
+                }
         }
     }
 }
