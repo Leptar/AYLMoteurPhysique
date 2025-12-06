@@ -296,7 +296,6 @@ void World::stepRigidBodies(std::vector<RigidBodyBox>& rigidBodies,
                             float deltaTime,
                             const AABB& worldBounds)
 {
-    m_worldBounds = worldBounds;
     m_rigidBodies.clear();
 
     for (auto& box : rigidBodies)
@@ -316,6 +315,28 @@ void World::stepRigidBodies(std::vector<RigidBodyBox>& rigidBodies,
         applyRigidBodyForces(entry->body, deltaTime);
         entry->body.integrer(deltaTime);
     }
+
+    // Ajuste dynamiquement les limites de l'octree pour inclure tous les corps
+    // simulés, même s'ils ont quitté le volume de base.
+    AABB expandedBounds = worldBounds;
+    for (const auto& entry : m_rigidBodies)
+    {
+        if (!entry || !entry->primitive)
+        {
+            continue;
+        }
+
+        Vector3D center = entry->body.getPosition();
+        float radius = entry->boundingRadius;
+        expandedBounds.min.x = std::min(expandedBounds.min.x, center.x - radius);
+        expandedBounds.min.y = std::min(expandedBounds.min.y, center.y - radius);
+        expandedBounds.min.z = std::min(expandedBounds.min.z, center.z - radius);
+        expandedBounds.max.x = std::max(expandedBounds.max.x, center.x + radius);
+        expandedBounds.max.y = std::max(expandedBounds.max.y, center.y + radius);
+        expandedBounds.max.z = std::max(expandedBounds.max.z, center.z + radius);
+    }
+
+    m_worldBounds = expandedBounds;
 
     // Broad puis narrow phase pour les collisions dynamique-dynamique
     broadPhaseDetection();
