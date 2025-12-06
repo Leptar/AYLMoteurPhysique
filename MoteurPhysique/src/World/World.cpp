@@ -21,10 +21,9 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 bool computeBoxBoxContact(const AABB& aabbA,
                           const AABB& aabbB,
-                          const Vector3D& centerA,
-                          const Vector3D& centerB,
                           Vector3D& outNormal,
-                          float& outPenetration)
+                          float& outPenetration,
+                          Vector3D& outContactPoint)
 {
         float overlapX = std::min(aabbA.max.x, aabbB.max.x) - std::max(aabbA.min.x, aabbB.min.x);
         float overlapY = std::min(aabbA.max.y, aabbB.max.y) - std::max(aabbA.min.y, aabbB.min.y);
@@ -33,6 +32,9 @@ bool computeBoxBoxContact(const AABB& aabbA,
         if (overlapX <= 0.f || overlapY <= 0.f || overlapZ <= 0.f) {
                 return false;
         }
+
+        Vector3D centerA = (aabbA.min + aabbA.max).scalar(0.5f);
+        Vector3D centerB = (aabbB.min + aabbB.max).scalar(0.5f);
 
         outPenetration = overlapX;
         outNormal = Vector3D((centerB.x >= centerA.x) ? 1.f : -1.f, 0.f, 0.f);
@@ -45,6 +47,8 @@ bool computeBoxBoxContact(const AABB& aabbA,
                 outPenetration = overlapZ;
                 outNormal = Vector3D(0.f, 0.f, (centerB.z >= centerA.z) ? 1.f : -1.f);
         }
+
+        outContactPoint = (centerA + centerB).scalar(0.5f);
 
         return true;
 }
@@ -350,12 +354,11 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
                 }
 
                 Vector3D normal;
+                Vector3D contactPoint;
                 float penetration = 0.f;
                 if (computeBoxBoxContact(bodyA->worldAABB, bodyB->worldAABB,
-                                         bodyA->getPosition(), bodyB->getPosition(),
-                                         normal, penetration))
+                                         normal, penetration, contactPoint))
                 {
-                        Vector3D contactPoint = (bodyA->getPosition() + bodyB->getPosition()).scalar(0.5f);
                         collisionSystem->add(box1, box2, contactPoint, normal, penetration, 0.35f, collision_type::Contact);
                 }
         }
