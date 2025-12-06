@@ -1,5 +1,6 @@
 #pragma once
 #include "Matrix3.h"
+#include "3DVector.h"
 
 #include <array>
 class Matrix4 {
@@ -16,6 +17,7 @@ public:
 
 
 	Matrix4 operator*(const Matrix4& B) const;
+	Vector3D operator*(const Vector3D& v) const;
 	Matrix4 operator-(const Matrix4 & B) const;
 	Matrix4 operator+(const Matrix4 & B) const;
 	Matrix4 operator/(const float & scalar) const;
