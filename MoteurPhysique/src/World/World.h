@@ -68,6 +68,13 @@ public:
                                                   float boundsX,
                                                   float boundsZ) const;
 
+    void setWorldBounds(const AABB& bounds);
+    void registerRigidBody(RigidBodyBox& body);
+    void clearRigidBodies();
+
+    void detectAndResolveRigidBodyCollisions();
+    const std::vector<AABB>& getOctreeNodes() const;
+
 private:
     std::vector<Particule*> m_particules;
 
@@ -78,8 +85,10 @@ private:
 	// Systeme de collision
 	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
 	
-	// Le monde possède les corps rigides
-	std::vector<RigidBodyBox*> m_rigidBodies;
+        // Le monde possède les corps rigides
+        std::vector<RigidBodyBox*> m_rigidBodies;
+
+        std::vector<AABB> m_octreeNodes;
 
 	// L'Octree, reconstruit à chaque frame
 	std::unique_ptr<Octree> m_octree;

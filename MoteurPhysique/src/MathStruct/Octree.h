@@ -3,6 +3,9 @@
 #include "ofEvent.h"
 #include "WorldObject/Primitive.h"
 
+#include <array>
+#include <memory>
+
 class Octree
 {
 public:
@@ -13,6 +16,8 @@ public:
     bool insert(Primitive* object,const AABB& NewArea);
 
     std::vector<Primitive*> request(const AABB& otherBounds);
+
+    void collectBounds(std::vector<AABB>& outNodes) const;
 
     bool containsEntiraly(const AABB& other) const;
 private:

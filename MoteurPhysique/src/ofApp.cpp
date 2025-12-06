@@ -121,6 +121,7 @@ void ofApp::update(){
                 blob.update(dt, useVerletBlob, applyGravityBlob, applyFrictionBlob, applySpringsBlob);
                 break;
         case SceneType::Phase3Game:
+        case SceneType::OctreeDebug:
                 updateRigidBodyGame(dt);
                 break;
         }
@@ -141,6 +142,9 @@ void ofApp::draw(){
                 break;
         case SceneType::Phase3Game:
                 drawRigidBodyGame();
+                break;
+        case SceneType::OctreeDebug:
+                drawOctreeDebug();
                 break;
         }
 
@@ -209,7 +213,8 @@ void ofApp::drawHud() const
         stream << "Scènes (Tab)\n";
         stream << ((activeScene == SceneType::Phase1Projectiles) ? "[x]" : "[ ]") << " Phase 1 - Projectiles (P)\n";
         stream << ((activeScene == SceneType::Phase2Blob) ? "[x]" : "[ ]") << " Phase 2 - Blob (B)\n\n";
-        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n\n";
+        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n";
+        stream << ((activeScene == SceneType::OctreeDebug) ? "[x]" : "[ ]") << " Phase 4 - Octree (O)\n\n";
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 stream << "Projectiles actifs : " << projectiles.size() << "\n";
@@ -240,6 +245,9 @@ void ofApp::drawHud() const
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
                 stream << "Réinitialiser : R\n";
+        } else if (activeScene == SceneType::OctreeDebug) {
+                stream << "Octree : " << (showOctree ? "visible" : "caché") << " (T)\n";
+                stream << "Scène basée sur le jeu de caisses\n";
         }
 
         stream << "Afficher le HUD : H\n";
@@ -293,11 +301,13 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == OF_KEY_TAB) {
-                // Basculer entre les trois scènes de démonstration.
+                // Basculer entre les scènes de démonstration.
                 if (activeScene == SceneType::Phase1Projectiles) {
                         activeScene = SceneType::Phase2Blob;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         activeScene = SceneType::Phase3Game;
+                } else if (activeScene == SceneType::Phase3Game) {
+                        activeScene = SceneType::OctreeDebug;
                 } else {
                         activeScene = SceneType::Phase1Projectiles;
                 }
@@ -305,7 +315,7 @@ void ofApp::keyPressed(int key){
                 if (activeScene != SceneType::Phase2Blob) {
                         clearBlobMovementKeys();
                 }
-                if (activeScene != SceneType::Phase3Game) {
+                if (activeScene != SceneType::Phase3Game && activeScene != SceneType::OctreeDebug) {
                         clearRigidBodyMovementKeys();
                 }
         }
@@ -324,6 +334,10 @@ void ofApp::keyPressed(int key){
                 clearBlobMovementKeys();
                 clearRigidBodyMovementKeys();
         }
+        if (key == 'o' || key == 'O') {
+                activeScene = SceneType::OctreeDebug;
+                clearBlobMovementKeys();
+        }
 
         if (key == 'h' || key == 'H') {
                 showHud = !showHud;
@@ -334,7 +348,7 @@ void ofApp::keyPressed(int key){
                         applyGravityPhase1 = !applyGravityPhase1;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         applyGravityBlob = !applyGravityBlob;
-                } else if (activeScene == SceneType::Phase3Game) {
+                } else if (activeScene == SceneType::Phase3Game || activeScene == SceneType::OctreeDebug) {
                         applyGravityRigidBodies = !applyGravityRigidBodies;
                 }
         }
@@ -368,6 +382,12 @@ void ofApp::keyPressed(int key){
         if (key == 'c' || key == 'C') {
                 if (activeScene == SceneType::Phase2Blob) {
                         highlightCollisions = !highlightCollisions;
+                }
+        }
+
+        if (key == 't' || key == 'T') {
+                if (activeScene == SceneType::OctreeDebug) {
+                        showOctree = !showOctree;
                 }
         }
 
@@ -516,6 +536,7 @@ void ofApp::setupRigidBodyGame()
 void ofApp::addRigidBodyBox(RigidBodyBox&& box)
 {
         rigidBodies.push_back(std::move(box));
+        physicsWorld.registerRigidBody(rigidBodies.back());
         ++totalRigidBodySpawned;
 }
 
@@ -535,6 +556,11 @@ void ofApp::performRigidBodyGameReset()
         clearRigidBodyMovementKeys();
 
         goalCenter.y = rigidBodyFloorY;
+
+        physicsWorld.setWorldBounds(AABB(
+                Vector3D(-rigidBodyBoundsX - 40.f, rigidBodyFloorY - 120.f, -rigidBodyBoundsZ - 40.f),
+                Vector3D(rigidBodyBoundsX + 40.f, rigidBodyFloorY + 520.f, rigidBodyBoundsZ + 40.f)));
+        physicsWorld.clearRigidBodies();
 
         auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
         for (auto& box : initialBoxes) {
@@ -618,6 +644,8 @@ void ofApp::updateRigidBodyGame(float dt)
                         ++rigidBodyLost;
                 }
         }
+
+        physicsWorld.detectAndResolveRigidBodyCollisions();
 }
 
 //--------------------------------------------------------------
@@ -765,6 +793,34 @@ void ofApp::drawRigidBodyGame()
                 ofPopMatrix();
         }
 
+        rigidBodyCamera.end();
+        ofDisableDepthTest();
+}
+
+void ofApp::drawOctreeDebug()
+{
+        drawRigidBodyGame();
+
+        if (!showOctree) {
+                return;
+        }
+
+        const auto& nodes = physicsWorld.getOctreeNodes();
+        if (nodes.empty()) {
+                return;
+        }
+
+        ofEnableDepthTest();
+        rigidBodyCamera.begin();
+        ofPushStyle();
+        ofNoFill();
+        ofSetColor(90, 200, 255, 120);
+        for (const auto& node : nodes) {
+                Vector3D size = node.max - node.min;
+                Vector3D center = node.getCenter();
+                ofDrawBox(center.x, center.y, center.z, size.x, size.y, size.z);
+        }
+        ofPopStyle();
         rigidBodyCamera.end();
         ofDisableDepthTest();
 }

@@ -32,7 +32,7 @@ class ofApp : public ofBaseApp{
                 void gotMessage(ofMessage msg);
         private:
                 /// Machine à états simple qui identifie la démonstration active.
-                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game };
+                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game, OctreeDebug };
 
                 /// Applique toutes les forces configurées aux projectiles actifs avant de les intégrer.
                 void updateProjectiles(float dt);
@@ -70,6 +70,7 @@ class ofApp : public ofBaseApp{
                 void updateRigidBodyGame(float dt);
                 /// Dessine l'aire de jeu ainsi que les corps rigides actifs.
                 void drawRigidBodyGame();
+                void drawOctreeDebug();
                 /// Fait apparaître un nouveau pavé à la position du distributeur contrôlé par le joueur.
                 void spawnRigidBodyFromDropper();
                 /// Replace la scène du jeu dans son état initial.
@@ -104,6 +105,7 @@ class ofApp : public ofBaseApp{
 
                 bool applyGravityRigidBodies = true;
                 bool drawRigidBodyWireframe = false;
+                bool showOctree = true;
 
                 int rigidBodyScore = 0;
                 int rigidBodyLost = 0;

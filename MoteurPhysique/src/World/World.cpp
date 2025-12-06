@@ -23,7 +23,7 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
-	collisionSystem = std::make_unique<SystemeCollisionDetection>();
+        collisionSystem = std::make_unique<SystemeCollisionDetection>();
 }
 
 World::~World()
@@ -116,6 +116,8 @@ RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
     box.body.setVelociteAngulaire(initialAngularVelocity);
     box.body.clearAccumulators();
 
+    box.primitive->corpsRigide = &box.body;
+
     return box;
 }
 
@@ -159,14 +161,33 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
     return boxes;
 }
 
-void World::broadPhaseDetection() {
-	// Construire l'octree
-	m_octree = std::make_unique<Octree>(m_worldBounds);
+void World::setWorldBounds(const AABB& bounds)
+{
+        m_worldBounds = bounds;
+}
 
-	// MAJ AABB et insert dans le octree
-	for (auto & body_box : m_rigidBodies) {
-		body_box->body.calculateWorldAABB(*body_box->primitive);
-		m_octree->insert(body_box->primitive, body_box->body.worldAABB);
+void World::registerRigidBody(RigidBodyBox& body)
+{
+        if (body.primitive && body.primitive->corpsRigide == nullptr) {
+                body.primitive->corpsRigide = &body.body;
+        }
+        m_rigidBodies.push_back(&body);
+}
+
+void World::clearRigidBodies()
+{
+        m_rigidBodies.clear();
+}
+
+void World::broadPhaseDetection() {
+        // Construire l'octree
+        m_octree = std::make_unique<Octree>(m_worldBounds);
+        m_octreeNodes.clear();
+
+        // MAJ AABB et insert dans le octree
+        for (auto & body_box : m_rigidBodies) {
+                body_box->body.calculateWorldAABB(*body_box->primitive);
+                m_octree->insert(body_box->primitive, body_box->body.worldAABB);
 	}
 
 	// Genere les pairs potentielles
@@ -185,10 +206,10 @@ void World::broadPhaseDetection() {
 	}
 
 
-	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
-	narrowPhaseDetection(potentialCollisions);
-	
-	std::cout << "Collisions potentielles cette frame: " << potentialCollisions.size() << std::endl;
+        // À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
+        narrowPhaseDetection(potentialCollisions);
+
+        m_octree->collectBounds(m_octreeNodes);
 
 }
 
@@ -215,6 +236,32 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
         Box* box2 = dynamic_cast<Box*>(p2);
         Plane* plane1 = dynamic_cast<Plane*>(p1);
         Plane* plane2 = dynamic_cast<Plane*>(p2);
+
+        if (box1 && box2) {
+                const AABB& a = box1->corpsRigide->worldAABB;
+                const AABB& b = box2->corpsRigide->worldAABB;
+
+                if (a.intersects(b)) {
+                        float overlapX = std::min(a.max.x - b.min.x, b.max.x - a.min.x);
+                        float overlapY = std::min(a.max.y - b.min.y, b.max.y - a.min.y);
+                        float overlapZ = std::min(a.max.z - b.min.z, b.max.z - a.min.z);
+
+                        float minOverlap = overlapX;
+                        Vector3D normal( (a.getCenter().x < b.getCenter().x) ? -1.f : 1.f, 0.f, 0.f);
+
+                        if (overlapY < minOverlap) {
+                                minOverlap = overlapY;
+                                normal = Vector3D(0.f, (a.getCenter().y < b.getCenter().y) ? -1.f : 1.f, 0.f);
+                        }
+                        if (overlapZ < minOverlap) {
+                                minOverlap = overlapZ;
+                                normal = Vector3D(0.f, 0.f, (a.getCenter().z < b.getCenter().z) ? -1.f : 1.f);
+                        }
+
+                        Vector3D contactPoint = (box1->corpsRigide->getPosition() + box2->corpsRigide->getPosition()).scalar(0.5f);
+                        collisionSystem->add(box1, box2, contactPoint, normal, minOverlap, 0.55f, collision_type::Contact);
+                }
+        }
 
         // --- Cas : Boîte vs Plan ---
         if (box1 && plane2)
@@ -243,11 +290,11 @@ void World::update(float deltaTime)
     m_collisionDetector.resolveAll();
 
 	// CorpsRigide
-	for (auto& bodybox : m_rigidBodies) {
-		applyRigidBodyForces(bodybox->body, deltaTime);
+        for (auto& bodybox : m_rigidBodies) {
+                applyRigidBodyForces(bodybox->body, deltaTime);
 
-		bodybox->body.integrer(deltaTime);
-	}
+                bodybox->body.integrer(deltaTime);
+        }
 
 	broadPhaseDetection();
 	// TODO : phase restreinte et resolution
@@ -256,4 +303,17 @@ void World::update(float deltaTime)
 		bodybox->body.clearAccumulators();
 	}
 
+}
+
+void World::detectAndResolveRigidBodyCollisions()
+{
+        broadPhaseDetection();
+        if (collisionSystem) {
+                collisionSystem->resolveAll();
+        }
+}
+
+const std::vector<AABB>& World::getOctreeNodes() const
+{
+        return m_octreeNodes;
 }
