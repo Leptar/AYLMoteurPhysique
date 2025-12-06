@@ -8,6 +8,7 @@
 #include "ofMain.h"
 #include "Projectile.h"
 
+#include <list>
 #include <map>
 #include <memory>
 #include <vector>
@@ -55,7 +56,7 @@ class ofApp : public ofBaseApp{
                 Blob blob;
                 ofRectangle blobBounds;
 
-                std::vector<RigidBodyBox> rigidBodies;
+                std::list<RigidBodyBox> rigidBodies;
                 std::vector<RigidBodyBox> pendingRigidBodySpawns;
                 ofEasyCam rigidBodyCamera;
                 bool rigidBodyResetRequested = false;

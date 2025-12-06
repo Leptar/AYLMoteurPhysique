@@ -544,7 +544,6 @@ void ofApp::addRigidBodyBox(RigidBodyBox&& box)
 void ofApp::performRigidBodyGameReset()
 {
         rigidBodies.clear();
-        rigidBodies.reserve(48);
         pendingRigidBodySpawns.clear();
 
         rigidBodyScore = 0;

@@ -186,18 +186,30 @@ void World::registerRigidBody(RigidBodyBox& body)
 void World::clearRigidBodies()
 {
         m_rigidBodies.clear();
+        m_octreeNodes.clear();
+        m_octree.reset();
 }
 
 void World::broadPhaseDetection() {
+        if (collisionSystem) {
+                collisionSystem->clear();
+        }
+
         // Construire l'octree
         m_octree = std::make_unique<Octree>(m_worldBounds);
         m_octreeNodes.clear();
+
+        // Aucun corps actif : on retourne immédiatement avec un octree vide.
+        if (m_rigidBodies.empty()) {
+                m_octree->collectBounds(m_octreeNodes);
+                return;
+        }
 
         // MAJ AABB et insert dans le octree
         for (auto & body_box : m_rigidBodies) {
                 body_box->body.calculateWorldAABB(*body_box->primitive);
                 m_octree->insert(body_box->primitive, body_box->body.worldAABB);
-	}
+        }
 
 	// Genere les pairs potentielles
 	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
