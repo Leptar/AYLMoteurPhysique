@@ -14,6 +14,8 @@ public:
 
     std::vector<Primitive*> request(const AABB& otherBounds);
 
+    void gatherNodes(std::vector<AABB>& nodes) const;
+
     bool containsEntiraly(const AABB& other) const;
 private:
     // Position du sommet AABB min(minx, miny, minz) et max(maxx, maxy, maxz)
@@ -24,7 +26,7 @@ private:
     std::vector<Primitive*> Objets;
 
 	// représentation 3d
-	std::array<std::unique_ptr<Octree>, 8> children;
+    std::array<std::unique_ptr<Octree>, 8> children;
 
     bool bHasBeenSubdivide = false;
 };

@@ -1,6 +1,9 @@
 #include "World.h"
 
 #include <algorithm>
+#include <cmath>
+#include <set>
+#include <unordered_map>
 
 #include "ofMath.h"
 #include "ofMathConstants.h"
@@ -116,6 +119,9 @@ RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
     box.body.setVelociteAngulaire(initialAngularVelocity);
     box.body.clearAccumulators();
 
+    box.primitive = std::make_unique<Box>(halfExtents);
+    box.primitive->corpsRigide = &box.body;
+
     return box;
 }
 
@@ -160,48 +166,74 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
 }
 
 void World::broadPhaseDetection() {
-	// Construire l'octree
-	m_octree = std::make_unique<Octree>(m_worldBounds);
+        if (!collisionSystem)
+        {
+                return;
+        }
 
-	// MAJ AABB et insert dans le octree
-	for (auto & body_box : m_rigidBodies) {
-		body_box->body.calculateWorldAABB(*body_box->primitive);
-		m_octree->insert(body_box->primitive, body_box->body.worldAABB);
-	}
+        // Construire l'octree à partir des limites actuelles
+        m_octree = std::make_unique<Octree>(m_worldBounds);
+        m_octreeDebugNodes.clear();
 
-	// Genere les pairs potentielles
-	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
+        std::unordered_map<Primitive*, AABB> sphereBounds;
 
-	for (auto& body_boxA : m_rigidBodies) {
-		Primitive* primitiveA = body_boxA->primitive;
+        for (auto & body_box : m_rigidBodies) {
+                if (!body_box->primitive)
+                {
+                        continue;
+                }
 
-		std::vector<Primitive*> condidates = m_octree->request(body_boxA->body.worldAABB);
+                body_box->body.calculateWorldAABB(*body_box->primitive);
 
-		for (Primitive* primitiveB : condidates) {
-			if (primitiveA < primitiveB) {
-				potentialCollisions.push_back(std::make_pair(primitiveA, primitiveB));
-			}
-		}
-	}
+                // Volume englobant sphérique pour la broad phase
+                Vector3D center = body_box->body.getPosition();
+                float radius = body_box->boundingRadius;
+                Vector3D min = center - Vector3D(radius, radius, radius);
+                Vector3D max = center + Vector3D(radius, radius, radius);
+                AABB bound(min, max);
 
+                sphereBounds[body_box->primitive.get()] = bound;
+                m_octree->insert(body_box->primitive.get(), bound);
+        }
 
-	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
-	narrowPhaseDetection(potentialCollisions);
-	
-	std::cout << "Collisions potentielles cette frame: " << potentialCollisions.size() << std::endl;
+        // Conserve les noeuds pour l'affichage debug
+        if (m_octree)
+        {
+                m_octree->gatherNodes(m_octreeDebugNodes);
+        }
 
+        // Génère les paires potentielles
+        std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
+
+        for (auto& body_boxA : m_rigidBodies) {
+                Primitive* primitiveA = body_boxA->primitive.get();
+                if (!primitiveA)
+                {
+                        continue;
+                }
+
+                std::vector<Primitive*> condidates = m_octree->request(sphereBounds[primitiveA]);
+
+                for (Primitive* primitiveB : condidates) {
+                        if (primitiveA < primitiveB) {
+                                potentialCollisions.push_back(std::make_pair(primitiveA, primitiveB));
+                        }
+                }
+        }
+
+        // À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
+        narrowPhaseDetection(potentialCollisions);
 }
 
 void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions)
 {
-    // 1. On vide les collisions de la frame précédente
-    if (collisionSystem) {
-        collisionSystem->clear();
-    } else {
+    if (!collisionSystem)
+    {
         return;
     }
 
-    // 2. On parcourt toutes les paires renvoyées par la Broad Phase
+    collisionSystem->clear();
+
     for (const auto& pair : potentialCollisions)
     {
         Primitive* p1 = pair.first;
@@ -209,23 +241,103 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
 
         if (!p1 || !p2) continue;
 
-        // 3. Identification des types (RTTI)
-        // On essaie de caster p1 et p2 en Box ou Plane
         Box* box1 = dynamic_cast<Box*>(p1);
         Box* box2 = dynamic_cast<Box*>(p2);
         Plane* plane1 = dynamic_cast<Plane*>(p1);
         Plane* plane2 = dynamic_cast<Plane*>(p2);
 
-        // --- Cas : Boîte vs Plan ---
-        if (box1 && plane2)
+        if (box1 && box2)
+        {
+            detectSphereSphere(box1, box2);
+        }
+        else if (box1 && plane2)
         {
             collisionSystem->DetectBoxPlane(box1, plane2);
         }
         else if (plane1 && box2)
         {
-            // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
             collisionSystem->DetectBoxPlane(box2, plane1);
         }
+    }
+}
+
+void World::detectSphereSphere(Box* a, Box* b)
+{
+    if (!collisionSystem || !a || !b || !a->corpsRigide || !b->corpsRigide)
+    {
+        return;
+    }
+
+    Vector3D posA = a->corpsRigide->getPosition();
+    Vector3D posB = b->corpsRigide->getPosition();
+    Vector3D delta = posB - posA;
+
+    float distanceSq = delta.dot(delta);
+    float radiusA = std::max(a->HalfExtent.GetNorm(), 1.f);
+    float radiusB = std::max(b->HalfExtent.GetNorm(), 1.f);
+    float radiusSum = radiusA + radiusB;
+
+    if (distanceSq > radiusSum * radiusSum)
+    {
+        return;
+    }
+
+    float distance = std::sqrt(std::max(distanceSq, 1e-6f));
+    Vector3D normal = (distance > 1e-4f) ? delta.scalar(1.f / distance) : Vector3D(0.f, 1.f, 0.f);
+    float penetration = radiusSum - distance;
+
+    Vector3D contactPoint = posA + normal.scalar(radiusA - penetration * 0.5f);
+
+    collisionSystem->add(a, b, contactPoint, normal, penetration, 0.45f, collision_type::Contact);
+}
+
+void World::stepRigidBodies(std::vector<RigidBodyBox>& rigidBodies,
+                            const std::vector<Plane>& staticPlanes,
+                            float deltaTime,
+                            const AABB& worldBounds)
+{
+    m_worldBounds = worldBounds;
+    m_rigidBodies.clear();
+
+    for (auto& box : rigidBodies)
+    {
+        if (!box.primitive)
+        {
+            box.primitive = std::make_unique<Box>(box.halfExtents);
+        }
+
+        box.primitive->HalfExtent = box.halfExtents;
+        box.primitive->corpsRigide = &box.body;
+        m_rigidBodies.push_back(&box);
+    }
+
+    for (auto& entry : m_rigidBodies)
+    {
+        applyRigidBodyForces(entry->body, deltaTime);
+        entry->body.integrer(deltaTime);
+    }
+
+    // Broad puis narrow phase pour les collisions dynamique-dynamique
+    broadPhaseDetection();
+
+    // Détection Box-Plane en phase restreinte (plans statiques)
+    if (collisionSystem)
+    {
+        for (auto& entry : m_rigidBodies)
+        {
+            for (const Plane& planeTemplate : staticPlanes)
+            {
+                Plane plane = planeTemplate;
+                collisionSystem->DetectBoxPlane(entry->primitive.get(), &plane);
+            }
+        }
+
+        collisionSystem->resolveAll();
+    }
+
+    for (auto& entry : m_rigidBodies)
+    {
+        entry->body.clearAccumulators();
     }
 }
 

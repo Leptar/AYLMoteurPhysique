@@ -51,6 +51,20 @@ public:
     SystemCollisionDetection* getCollisionDetector();
 
     /**
+     * @brief Met à jour les corps rigides, reconstruit la structure de partition
+     *        et résout les collisions contre les plans fournis.
+     */
+    void stepRigidBodies(std::vector<RigidBodyBox>& rigidBodies,
+                         const std::vector<Plane>& staticPlanes,
+                         float deltaTime,
+                         const AABB& worldBounds);
+
+    /**
+     * @brief AABBs utilisées pour l'affichage du partitionnement spatial.
+     */
+    const std::vector<AABB>& getDebugOctreeNodes() const { return m_octreeDebugNodes; }
+
+    /**
      * @brief Crée et configure un pavé rigide prêt à être simulé.
      */
     RigidBodyBox createRigidBodyBox(const Vector3D& position,
@@ -82,12 +96,16 @@ private:
 	std::vector<RigidBodyBox*> m_rigidBodies;
 
 	// L'Octree, reconstruit à chaque frame
-	std::unique_ptr<Octree> m_octree;
+        std::unique_ptr<Octree> m_octree;
 
-	// Les limites de l'espace de simulation
-	AABB m_worldBounds;
+        // Noeuds utilisés pour l'affichage de la structure de partition.
+        std::vector<AABB> m_octreeDebugNodes;
 
-	// Méthodes privées pour la détection de collision
-	void broadPhaseDetection();
-	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
+        // Les limites de l'espace de simulation
+        AABB m_worldBounds;
+
+        // Méthodes privées pour la détection de collision
+        void broadPhaseDetection();
+        void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
+        void detectSphereSphere(Box* a, Box* b);
 };

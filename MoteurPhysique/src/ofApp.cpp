@@ -600,16 +600,43 @@ void ofApp::updateRigidBodyGame(float dt)
         dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
         dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
 
+        std::vector<Plane> planes;
+        Plane floorPlane;
+        floorPlane.normal = Vector3D(0.f, 1.f, 0.f);
+        floorPlane.PlaneOffset = rigidBodyFloorY;
+        planes.push_back(floorPlane);
+
+        Plane wallPosX;
+        wallPosX.normal = Vector3D(-1.f, 0.f, 0.f);
+        wallPosX.PlaneOffset = rigidBodyBoundsX;
+        planes.push_back(wallPosX);
+
+        Plane wallNegX;
+        wallNegX.normal = Vector3D(1.f, 0.f, 0.f);
+        wallNegX.PlaneOffset = rigidBodyBoundsX;
+        planes.push_back(wallNegX);
+
+        Plane wallPosZ;
+        wallPosZ.normal = Vector3D(0.f, 0.f, -1.f);
+        wallPosZ.PlaneOffset = rigidBodyBoundsZ;
+        planes.push_back(wallPosZ);
+
+        Plane wallNegZ;
+        wallNegZ.normal = Vector3D(0.f, 0.f, 1.f);
+        wallNegZ.PlaneOffset = rigidBodyBoundsZ;
+        planes.push_back(wallNegZ);
+
+        AABB worldBounds(
+                Vector3D(-rigidBodyBoundsX * 1.2f, rigidBodyFloorY - 240.f, -rigidBodyBoundsZ * 1.2f),
+                Vector3D(rigidBodyBoundsX * 1.2f, dropperSpawnHeight + 340.f, rigidBodyBoundsZ * 1.2f));
+
+        physicsWorld.stepRigidBodies(rigidBodies, planes, dt, worldBounds);
+
         for (auto& box : rigidBodies) {
                 if (box.reachedGoal || box.outOfBounds) {
                         continue;
                 }
 
-                physicsWorld.applyRigidBodyForces(box.body, dt);
-
-                box.body.integrer(dt);
-
-                applyRigidBodyBounds(box);
                 handleRigidBodyGoal(box);
 
                 Vector3D position = box.body.getPosition();
@@ -763,6 +790,19 @@ void ofApp::drawRigidBodyGame()
                 }
                 ofPopStyle();
                 ofPopMatrix();
+        }
+
+        const auto& debugNodes = physicsWorld.getDebugOctreeNodes();
+        if (!debugNodes.empty()) {
+                ofPushStyle();
+                ofNoFill();
+                ofSetColor(120, 200, 255, 110);
+                for (const auto& node : debugNodes) {
+                        Vector3D center = node.getCenter();
+                        Vector3D size = node.max - node.min;
+                        ofDrawBox(center.x, center.y, center.z, size.x, size.y, size.z);
+                }
+                ofPopStyle();
         }
 
         rigidBodyCamera.end();
