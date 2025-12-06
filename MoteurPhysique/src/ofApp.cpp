@@ -90,6 +90,7 @@ void ofApp::setup(){
         blob.setup(blobBounds);
 
         setupRigidBodyGame();
+        setupCollisionScene();
 
         lastTime = ofGetElapsedTimeMillis();
 }
@@ -123,6 +124,9 @@ void ofApp::update(){
         case SceneType::Phase3Game:
                 updateRigidBodyGame(dt);
                 break;
+        case SceneType::Phase4Collision:
+                updateCollisionScene(dt);
+                break;
         }
 }
 
@@ -141,6 +145,9 @@ void ofApp::draw(){
                 break;
         case SceneType::Phase3Game:
                 drawRigidBodyGame();
+                break;
+        case SceneType::Phase4Collision:
+                drawCollisionScene();
                 break;
         }
 
@@ -293,11 +300,13 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == OF_KEY_TAB) {
-                // Basculer entre les trois scènes de démonstration.
+                // Basculer entre les quatre scènes de démonstration.
                 if (activeScene == SceneType::Phase1Projectiles) {
                         activeScene = SceneType::Phase2Blob;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         activeScene = SceneType::Phase3Game;
+                } else if (activeScene == SceneType::Phase3Game) {
+                        activeScene = SceneType::Phase4Collision;
                 } else {
                         activeScene = SceneType::Phase1Projectiles;
                 }
@@ -324,9 +333,27 @@ void ofApp::keyPressed(int key){
                 clearBlobMovementKeys();
                 clearRigidBodyMovementKeys();
         }
+        if (key == 'o' || key == 'O') {
+                activeScene = SceneType::Phase4Collision;
+                clearBlobMovementKeys();
+                clearRigidBodyMovementKeys();
+        }
 
         if (key == 'h' || key == 'H') {
                 showHud = !showHud;
+        }
+
+        // Phase 4 collision scene controls
+        if (activeScene == SceneType::Phase4Collision) {
+                if (key == 't' || key == 'T') {
+                        showOctreeVisualization = !showOctreeVisualization;
+                }
+                if (key == 's' || key == 'S') {
+                        showBoundingSpheres = !showBoundingSpheres;
+                }
+                if (key == 'c' || key == 'C') {
+                        showCollisionContacts = !showCollisionContacts;
+                }
         }
 
         if (key == 'g' || key == 'G') {
@@ -863,6 +890,233 @@ void ofApp::windowResized(int w, int h){
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
 
+}
+
+//--------------------------------------------------------------
+void ofApp::setupCollisionScene()
+{
+        // Créer le monde de collision avec octree
+        collisionWorld = std::make_unique<CollisionWorld>(800.0f, 256);
+
+        // Créer les plans de collision (limites du monde)
+        CollisionPlane floorPlane;
+        floorPlane.normal = Vector3D(0, 1, 0);
+        floorPlane.offset = -200.0f;
+        collisionWorld->addPlane(floorPlane);
+
+        // Créer plusieurs boîtes en collision
+        for (int i = 0; i < collisionBoxCount; i++) {
+                CollisionBox box;
+
+                // Taille aléatoire
+                float size = ofRandom(15.0f, 40.0f);
+                box.halfSize = Vector3D(size, size, size);
+
+                // Créer le corps rigide
+                box.body = new CorpsRigide();
+
+                // Position aléatoire
+                float x = ofRandom(-200.0f, 200.0f);
+                float y = ofRandom(0.0f, 200.0f);
+                float z = ofRandom(-200.0f, 200.0f);
+                box.body->setPosition(Vector3D(x, y, z));
+
+                // Vitesse aléatoire
+                float vx = ofRandom(-50.0f, 50.0f);
+                float vy = ofRandom(-50.0f, 50.0f);
+                float vz = ofRandom(-50.0f, 50.0f);
+                box.body->setVelocite(Vector3D(vx, vy, vz));
+
+                // Masse et inertie
+                float mass = 1.0f;
+                box.body->setInverseMasse(1.0f / mass);
+
+                Matrix3 inertiaTensor;
+                inertiaTensor.setDiagonal(
+                        (mass * (size * size + size * size)) / 3.0f,
+                        (mass * (size * size + size * size)) / 3.0f,
+                        (mass * (size * size + size * size)) / 3.0f
+                );
+                box.body->setInverseInertiaTensorBody(inertiaTensor.inverse());
+
+                collisionBoxes.push_back(box);
+        }
+
+        // Enregistrer les primitives dans le monde de collision
+        for (auto& box : collisionBoxes) {
+                collisionWorld->addPrimitive(&box);
+        }
+
+        collisionCamera.setDistance(600);
+}
+
+//--------------------------------------------------------------
+void ofApp::updateCollisionScene(float dt)
+{
+        if (dt <= 0.0f || dt > 0.1f) {
+                dt = 0.016f; // Limiter le deltaTime
+        }
+
+        // Appliquer la gravité
+        Vector3D gravity(0, -200.0f, 0);
+        for (auto& box : collisionBoxes) {
+                if (box.body) {
+                        box.body->addForce(gravity);
+                }
+        }
+
+        // Intégrer les corps rigides
+        for (auto& box : collisionBoxes) {
+                if (box.body) {
+                        box.body->integrer(dt);
+                }
+        }
+
+        // Détecter et résoudre les collisions
+        collisionWorld->detectCollisions();
+        collisionWorld->resolveCollisions(dt);
+
+        // Nettoyer les accumulateurs
+        for (auto& box : collisionBoxes) {
+                if (box.body) {
+                        box.body->clearAccumulators();
+                }
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::drawCollisionScene()
+{
+        ofEnableDepthTest();
+        collisionCamera.begin();
+
+        // Dessiner le plan du sol
+        ofPushStyle();
+        ofSetColor(40, 40, 60);
+        ofDrawPlane(0, -200, 0, 800, 800);
+        ofPopStyle();
+
+        // Dessiner l'octree si activé
+        if (showOctreeVisualization && collisionWorld) {
+                const Octree* octree = collisionWorld->getOctree();
+                if (octree) {
+                        drawOctreeNode(octree, 0);
+                }
+        }
+
+        // Dessiner les boîtes
+        for (const auto& box : collisionBoxes) {
+                if (box.body) {
+                        ofPushMatrix();
+
+                        Vector3D pos = box.body->getPosition();
+                        ofTranslate(pos.x, pos.y, pos.z);
+
+                        Quaternion q = box.body->getOrientation();
+                        q.normalize();
+                        float clampedW = ofClamp(q.w, -1.f, 1.f);
+                        float angleRad = 2.f * std::acos(clampedW);
+                        float sinHalf = std::sqrt(std::max(0.f, 1.f - clampedW * clampedW));
+
+                        ofVec3f axis(0.f, 1.f, 0.f);
+                        if (sinHalf > 1e-4f) {
+                                axis.set(q.x / sinHalf, q.y / sinHalf, q.z / sinHalf);
+                        }
+                        ofRotateRad(angleRad, axis.x, axis.y, axis.z);
+
+                        ofPushStyle();
+                        ofSetColor(100, 150, 255, 180);
+                        ofDrawBox(0, 0, 0, box.halfSize.x * 2, box.halfSize.y * 2, box.halfSize.z * 2);
+                        ofPopStyle();
+
+                        // Dessiner la sphère englobante si activé
+                        if (showBoundingSpheres) {
+                                ofPushStyle();
+                                ofNoFill();
+                                ofSetColor(255, 255, 0, 100);
+                                BoundingSphere sphere = box.getBoundingSphere();
+                                ofDrawSphere(0, 0, 0, sphere.radius);
+                                ofPopStyle();
+                        }
+
+                        ofPopMatrix();
+                }
+        }
+
+        // Dessiner les contacts de collision si activé
+        if (showCollisionContacts && collisionWorld) {
+                unsigned contactCount = collisionWorld->getContactCount();
+                const RigidBodyContact* contacts = collisionWorld->getContacts();
+
+                for (unsigned i = 0; i < contactCount; i++) {
+                        const RigidBodyContact& contact = contacts[i];
+
+                        ofPushStyle();
+                        ofSetColor(255, 0, 0);
+                        ofDrawSphere(contact.contactPoint.x, contact.contactPoint.y, contact.contactPoint.z, 3.0f);
+
+                        // Dessiner la normale du contact
+                        ofSetColor(255, 255, 0);
+                        Vector3D endPoint = contact.contactPoint + contact.contactNormal.scalar(20.0f);
+                        ofDrawLine(contact.contactPoint.x, contact.contactPoint.y, contact.contactPoint.z,
+                                  endPoint.x, endPoint.y, endPoint.z);
+                        ofPopStyle();
+                }
+        }
+
+        collisionCamera.end();
+        ofDisableDepthTest();
+
+        // Afficher les informations
+        ofPushStyle();
+        ofSetColor(255);
+        std::stringstream info;
+        info << "Phase 4: Collision Detection with Octree\n";
+        info << "Boxes: " << collisionBoxes.size() << "\n";
+        if (collisionWorld) {
+                info << "Contacts: " << collisionWorld->getContactCount() << "\n";
+        }
+        info << "\nControls:\n";
+        info << "T: Toggle Octree Visualization (" << (showOctreeVisualization ? "ON" : "OFF") << ")\n";
+        info << "S: Toggle Bounding Spheres (" << (showBoundingSpheres ? "ON" : "OFF") << ")\n";
+        info << "C: Toggle Collision Contacts (" << (showCollisionContacts ? "ON" : "OFF") << ")\n";
+        info << "O: Switch to this scene\n";
+        info << "TAB: Next scene\n";
+
+        ofDrawBitmapString(info.str(), 20, 20);
+        ofPopStyle();
+}
+
+//--------------------------------------------------------------
+void ofApp::drawOctreeNode(const Octree* node, int depth)
+{
+        if (!node) {
+                return;
+        }
+
+        const OctreeRegion& region = node->getRegion();
+
+        // Dessiner la boîte du nœud
+        ofPushStyle();
+        ofNoFill();
+
+        // Couleur basée sur la profondeur
+        int colorIntensity = 255 - (depth * 30);
+        ofSetColor(colorIntensity, colorIntensity / 2, 255 - colorIntensity, 80);
+
+        ofDrawBox(region.center.x, region.center.y, region.center.z,
+                 region.halfSize * 2, region.halfSize * 2, region.halfSize * 2);
+        ofPopStyle();
+
+        // Dessiner récursivement les enfants
+        if (!node->isLeaf()) {
+                for (int i = 0; i < 8; i++) {
+                        const Octree* child = node->getChild(i);
+                        if (child) {
+                                drawOctreeNode(child, depth + 1);
+                        }
+                }
+        }
 }
 
 //--------------------------------------------------------------
