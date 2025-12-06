@@ -82,6 +82,15 @@ RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
     box.reachedGoal = false;
     box.outOfBounds = false;
 
+    if (box.primitive == nullptr)
+    {
+        box.primitive = new Box(halfExtents);
+    }
+    else if (Box* primitiveBox = dynamic_cast<Box*>(box.primitive))
+    {
+        primitiveBox->HalfExtent = halfExtents;
+    }
+
     Vector3D radiusVec = halfExtents;
     box.boundingRadius = std::max(radiusVec.GetNorm(), 6.f);
 
@@ -289,15 +298,17 @@ void World::update(float deltaTime)
 
     m_collisionDetector.resolveAll();
 
-	// CorpsRigide
+        // CorpsRigide
         for (auto& bodybox : m_rigidBodies) {
                 applyRigidBodyForces(bodybox->body, deltaTime);
 
                 bodybox->body.integrer(deltaTime);
         }
 
-	broadPhaseDetection();
-	// TODO : phase restreinte et resolution
+        broadPhaseDetection();
+        if (collisionSystem) {
+                collisionSystem->resolveAll();
+        }
 
 	for (auto& bodybox : m_rigidBodies) {
 		bodybox->body.clearAccumulators();
