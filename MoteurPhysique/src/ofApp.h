@@ -3,8 +3,10 @@
 #include "Blob.h"
 #include "ForceGenerator/ParticuleForceRegistry.h"
 #include "ForceGenerator/RigidBodyForceGravity.h"
+#include "MathStruct/AABB.h"
 #include "World/RigidBodyBox.h"
 #include "World/World.h"
+#include "Octree.h"
 #include "ofMain.h"
 #include "Projectile.h"
 
@@ -32,7 +34,7 @@ class ofApp : public ofBaseApp{
                 void gotMessage(ofMessage msg);
         private:
                 /// Machine à états simple qui identifie la démonstration active.
-                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game };
+                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game, Phase4Octree };
 
                 /// Applique toutes les forces configurées aux projectiles actifs avant de les intégrer.
                 void updateProjectiles(float dt);
@@ -83,6 +85,19 @@ class ofApp : public ofBaseApp{
                 /// Réinitialise les indicateurs de déplacement du distributeur de la phase 3.
                 void clearRigidBodyMovementKeys();
 
+                /// Prépare la scène d'affichage de l'octree (phase 4).
+                void setupOctreeDemo();
+                /// Met à jour la physique et l'octree pour la phase 4.
+                void updateOctreeDemo(float dt);
+                /// Dessine l'octree et les boîtes associées.
+                void drawOctreeDemo();
+                /// Reconstruit l'octree de debug avec les boîtes actuelles.
+                void rebuildOctreeDebug();
+                /// Dessine récursivement un nœud d'octree.
+                void drawOctreeNode(const Octree& node, int depth = 0) const;
+                /// Calcule le nombre total de nœuds pour l'affichage.
+                int countOctreeNodes(const Octree& node) const;
+
                 Vector3D rigidBodyGravity = Vector3D(0.f, -9.81f, 0.f);
                 float rigidBodyFloorY = -220.f;
                 float rigidBodyBoundsX = 320.f;
@@ -104,6 +119,12 @@ class ofApp : public ofBaseApp{
 
                 bool applyGravityRigidBodies = true;
                 bool drawRigidBodyWireframe = false;
+
+                // Phase 4 - Octree
+                std::vector<RigidBodyBox> octreeBodies;
+                std::unique_ptr<Octree> debugOctree;
+                AABB octreeBounds;
+                int octreeNodeCount = 0;
 
                 int rigidBodyScore = 0;
                 int rigidBodyLost = 0;

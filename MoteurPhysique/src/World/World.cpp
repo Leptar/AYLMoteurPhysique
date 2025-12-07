@@ -116,6 +116,16 @@ RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
     box.body.setVelociteAngulaire(initialAngularVelocity);
     box.body.clearAccumulators();
 
+    // Synchroniser la primitive de collision avec ce corps rigide
+    if (Box* primitiveBox = dynamic_cast<Box*>(box.primitive)) {
+        primitiveBox->HalfExtent = halfExtents;
+    } else {
+        delete box.primitive;
+        box.primitive = new Box(halfExtents);
+    }
+    box.primitive->corpsRigide = &box.body;
+    box.body.calculateWorldAABB(*box.primitive);
+
     return box;
 }
 

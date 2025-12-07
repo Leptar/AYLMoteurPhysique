@@ -90,6 +90,7 @@ void ofApp::setup(){
         blob.setup(blobBounds);
 
         setupRigidBodyGame();
+        setupOctreeDemo();
 
         lastTime = ofGetElapsedTimeMillis();
 }
@@ -123,6 +124,9 @@ void ofApp::update(){
         case SceneType::Phase3Game:
                 updateRigidBodyGame(dt);
                 break;
+        case SceneType::Phase4Octree:
+                updateOctreeDemo(dt);
+                break;
         }
 }
 
@@ -141,6 +145,9 @@ void ofApp::draw(){
                 break;
         case SceneType::Phase3Game:
                 drawRigidBodyGame();
+                break;
+        case SceneType::Phase4Octree:
+                drawOctreeDemo();
                 break;
         }
 
@@ -209,7 +216,8 @@ void ofApp::drawHud() const
         stream << "Scènes (Tab)\n";
         stream << ((activeScene == SceneType::Phase1Projectiles) ? "[x]" : "[ ]") << " Phase 1 - Projectiles (P)\n";
         stream << ((activeScene == SceneType::Phase2Blob) ? "[x]" : "[ ]") << " Phase 2 - Blob (B)\n\n";
-        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n\n";
+        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n";
+        stream << ((activeScene == SceneType::Phase4Octree) ? "[x]" : "[ ]") << " Phase 4 - Octree (O)\n\n";
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 stream << "Projectiles actifs : " << projectiles.size() << "\n";
@@ -239,6 +247,14 @@ void ofApp::drawHud() const
                 stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
+                stream << "Réinitialiser : R\n";
+        } else if (activeScene == SceneType::Phase4Octree) {
+                int activeBoxes = std::count_if(octreeBodies.begin(), octreeBodies.end(), [](const RigidBodyBox& box) {
+                        return !box.outOfBounds;
+                });
+                stream << "Boîtes actives : " << activeBoxes << " / " << octreeBodies.size() << "\n";
+                stream << "Noeuds de l'octree : " << octreeNodeCount << "\n";
+                stream << (applyGravityRigidBodies ? "[x]" : "[ ]") << " Gravité (G)\n";
                 stream << "Réinitialiser : R\n";
         }
 
@@ -293,11 +309,14 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == OF_KEY_TAB) {
-                // Basculer entre les trois scènes de démonstration.
+                // Basculer entre les quatre scènes de démonstration.
+                SceneType previousScene = activeScene;
                 if (activeScene == SceneType::Phase1Projectiles) {
                         activeScene = SceneType::Phase2Blob;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         activeScene = SceneType::Phase3Game;
+                } else if (activeScene == SceneType::Phase3Game) {
+                        activeScene = SceneType::Phase4Octree;
                 } else {
                         activeScene = SceneType::Phase1Projectiles;
                 }
@@ -307,6 +326,9 @@ void ofApp::keyPressed(int key){
                 }
                 if (activeScene != SceneType::Phase3Game) {
                         clearRigidBodyMovementKeys();
+                }
+                if (previousScene != SceneType::Phase4Octree && activeScene == SceneType::Phase4Octree) {
+                        setupOctreeDemo();
                 }
         }
 
@@ -324,6 +346,12 @@ void ofApp::keyPressed(int key){
                 clearBlobMovementKeys();
                 clearRigidBodyMovementKeys();
         }
+        if (key == 'o' || key == 'O') {
+                activeScene = SceneType::Phase4Octree;
+                clearBlobMovementKeys();
+                clearRigidBodyMovementKeys();
+                setupOctreeDemo();
+        }
 
         if (key == 'h' || key == 'H') {
                 showHud = !showHud;
@@ -334,7 +362,7 @@ void ofApp::keyPressed(int key){
                         applyGravityPhase1 = !applyGravityPhase1;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         applyGravityBlob = !applyGravityBlob;
-                } else if (activeScene == SceneType::Phase3Game) {
+                } else if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
                         applyGravityRigidBodies = !applyGravityRigidBodies;
                 }
         }
@@ -392,6 +420,8 @@ void ofApp::keyPressed(int key){
                         blob.reset(blobBounds);
                 } else if (activeScene == SceneType::Phase3Game) {
                         resetRigidBodyGame();
+                } else if (activeScene == SceneType::Phase4Octree) {
+                        setupOctreeDemo();
                 }
         }
 
@@ -767,6 +797,175 @@ void ofApp::drawRigidBodyGame()
 
         rigidBodyCamera.end();
         ofDisableDepthTest();
+}
+
+//--------------------------------------------------------------
+void ofApp::setupOctreeDemo()
+{
+        octreeBodies.clear();
+        octreeBodies.reserve(10);
+
+        float boundsPadding = 40.f;
+        octreeBounds = AABB(
+                Vector3D(-rigidBodyBoundsX - boundsPadding, rigidBodyFloorY - 60.f, -rigidBodyBoundsZ - boundsPadding),
+                Vector3D(rigidBodyBoundsX + boundsPadding, rigidBodyFloorY + 420.f, rigidBodyBoundsZ + boundsPadding));
+
+        for (int i = 0; i < 10; ++i) {
+                Vector3D halfExtents(
+                        ofRandom(12.f, 22.f),
+                        ofRandom(12.f, 24.f),
+                        ofRandom(12.f, 22.f));
+                Vector3D spawnPos(
+                        ofRandom(-rigidBodyBoundsX * 0.6f, rigidBodyBoundsX * 0.6f),
+                        dropperSpawnHeight + ofRandom(-60.f, 40.f),
+                        ofRandom(-rigidBodyBoundsZ * 0.6f, rigidBodyBoundsZ * 0.6f));
+
+                Vector3D linearVel(ofRandom(-30.f, 30.f), ofRandom(-10.f, 18.f), ofRandom(-30.f, 30.f));
+                Vector3D angularVel(ofRandom(-1.5f, 1.5f), ofRandom(-1.5f, 1.5f), ofRandom(-1.5f, 1.5f));
+
+                RigidBodyBox box = physicsWorld.createRigidBodyBox(spawnPos, halfExtents, 22.f, ofColor::lightBlue, linearVel, angularVel);
+                octreeBodies.push_back(std::move(box));
+        }
+
+        rebuildOctreeDebug();
+}
+
+//--------------------------------------------------------------
+void ofApp::updateOctreeDemo(float dt)
+{
+        if (dt <= 0.f) {
+                return;
+        }
+
+        for (auto& box : octreeBodies) {
+                if (box.outOfBounds) {
+                        continue;
+                }
+
+                physicsWorld.applyRigidBodyForces(box.body, dt);
+                box.body.integrer(dt);
+                applyRigidBodyBounds(box);
+
+                Vector3D position = box.body.getPosition();
+                if (position.y < rigidBodyFloorY - 420.f) {
+                        box.outOfBounds = true;
+                }
+        }
+
+        octreeBodies.erase(
+                std::remove_if(octreeBodies.begin(), octreeBodies.end(), [](const RigidBodyBox& box) { return box.outOfBounds; }),
+                octreeBodies.end());
+
+        rebuildOctreeDebug();
+}
+
+//--------------------------------------------------------------
+void ofApp::drawOctreeDemo()
+{
+        ofEnableDepthTest();
+        rigidBodyCamera.begin();
+
+        ofPushStyle();
+        ofSetColor(30, 34, 56);
+        ofDrawBox(0.f, rigidBodyFloorY - 6.f, 0.f, rigidBodyBoundsX * 2.f + 120.f, 12.f, rigidBodyBoundsZ * 2.f + 120.f);
+        ofPopStyle();
+
+        ofPushStyle();
+        ofSetColor(80, 150, 220, 60);
+        Vector3D center = octreeBounds.getCenter();
+        Vector3D size = octreeBounds.max - octreeBounds.min;
+        ofPushMatrix();
+        ofTranslate(center.x, center.y, center.z);
+        ofNoFill();
+        ofSetLineWidth(2.f);
+        ofDrawBox(0.f, 0.f, 0.f, size.x, size.y, size.z);
+        ofPopMatrix();
+        ofPopStyle();
+
+        for (const auto& box : octreeBodies) {
+                ofPushMatrix();
+                ofMatrix4x4 transform = buildTransformMatrix(box.body.getOrientation(), box.body.getPosition());
+                ofMultMatrix(transform);
+
+                ofPushStyle();
+                ofSetColor(box.color);
+                if (drawRigidBodyWireframe) {
+                        ofNoFill();
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                        ofFill();
+                } else {
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                }
+                ofPopStyle();
+                ofPopMatrix();
+        }
+
+        if (debugOctree) {
+            drawOctreeNode(*debugOctree);
+        }
+
+        rigidBodyCamera.end();
+        ofDisableDepthTest();
+}
+
+//--------------------------------------------------------------
+void ofApp::rebuildOctreeDebug()
+{
+        debugOctree = std::make_unique<Octree>(octreeBounds);
+
+        for (auto& box : octreeBodies) {
+                if (!box.primitive) {
+                        continue;
+                }
+                box.primitive->corpsRigide = &box.body;
+                box.body.calculateWorldAABB(*box.primitive);
+                debugOctree->insert(box.primitive, box.body.worldAABB);
+        }
+
+        octreeNodeCount = debugOctree ? countOctreeNodes(*debugOctree) : 0;
+}
+
+//--------------------------------------------------------------
+void ofApp::drawOctreeNode(const Octree& node, int depth) const
+{
+        const AABB& area = node.getArea();
+        Vector3D center = area.getCenter();
+        Vector3D size = area.max - area.min;
+
+        float alpha = ofMap(depth, 0, 6, 210, 70, true);
+        ofPushStyle();
+        ofNoFill();
+        ofSetColor(90, 210, 255, alpha);
+        ofPushMatrix();
+        ofTranslate(center.x, center.y, center.z);
+        ofDrawBox(0.f, 0.f, 0.f, size.x, size.y, size.z);
+        ofPopMatrix();
+        ofPopStyle();
+
+        if (!node.isSubdivided()) {
+                return;
+        }
+
+        const auto& children = node.getChildren();
+        for (const auto& child : children) {
+                if (child) {
+                        drawOctreeNode(*child, depth + 1);
+                }
+        }
+}
+
+//--------------------------------------------------------------
+int ofApp::countOctreeNodes(const Octree& node) const
+{
+        int total = 1;
+        if (node.isSubdivided()) {
+                for (const auto& child : node.getChildren()) {
+                        if (child) {
+                                total += countOctreeNodes(*child);
+                        }
+                }
+        }
+        return total;
 }
 
 //--------------------------------------------------------------
