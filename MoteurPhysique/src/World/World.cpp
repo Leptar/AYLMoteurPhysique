@@ -23,11 +23,11 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
-	collisionSystem = std::make_unique<SystemeCollisionDetection>();
+        collisionSystem = std::make_unique<SystemeCollisionDetection>();
 
-	// Initialiser les limites du monde pour l'Octree.
-	float worldSize = 500.0f;
-	m_worldBounds = AABB(Vector3D(-worldSize, -worldSize, -worldSize), Vector3D(worldSize, worldSize, worldSize));
+        // Initialiser les limites du monde pour l'Octree.
+        float worldSize = 500.0f;
+        m_worldBounds = AABB(Vector3D(-worldSize, -worldSize, -worldSize), Vector3D(worldSize, worldSize, worldSize));
 }
 
 World::~World()
@@ -65,11 +65,6 @@ const RigidBodyForceRegistry* World::getRigidBodyForceRegistry() const
 void World::applyRigidBodyForces(CorpsRigide& body, float deltaTime) const
 {
     m_rigidBodyForceRegistry.updateForces(body, deltaTime);
-}
-
-SystemCollisionDetection* World::getCollisionDetector()
-{
-    return &m_collisionDetector;
 }
 
 RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
@@ -245,7 +240,7 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
 
 void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
 {
-	// Particule
+        // Particule
     m_forceRegistry.updateForces(deltaTime);
 
     for (Particule* p : m_particules)
@@ -254,11 +249,9 @@ void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
         p->clearForce();
     }
 
-    m_collisionDetector.resolveAll();
-
-	// CorpsRigide
-	for (auto& bodybox : rigidBodies) {
-		applyRigidBodyForces(bodybox.body, deltaTime);
+        // CorpsRigide
+        for (auto& bodybox : rigidBodies) {
+                applyRigidBodyForces(bodybox.body, deltaTime);
 
 		bodybox.body.integrer(deltaTime);
 	}
