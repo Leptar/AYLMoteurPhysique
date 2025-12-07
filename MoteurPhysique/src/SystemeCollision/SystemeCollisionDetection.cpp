@@ -267,10 +267,10 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
     // 2. Calcul de la normale du plan en World Space
     Vector3D localOrigin(0, 0, 0);
     Vector3D worldOrigin = planeToWorld * localOrigin;
-    
-    Vector3D normalPosLocal = plane->normal; 
+
+    Vector3D normalPosLocal = plane->normal;
     Vector3D normalPosWorld = planeToWorld * normalPosLocal;
-    
+
     Vector3D planeNormalWorld = normalPosWorld - worldOrigin;
     planeNormalWorld = planeNormalWorld.normalize();
 
@@ -290,7 +290,11 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
         Vector3D( hx, -hy, -hz), Vector3D(-hx, -hy, -hz)
     };
 
-    // 5. Test intersection
+    // 5. Test intersection : on conserve uniquement le contact le plus profond
+    float maxPenetration = 0.f;
+    Vector3D accumulatedPoint;
+    int penetrationCount = 0;
+
     for (const auto& vertexLocal : verticesLocal)
     {
         // Q: Sommet en World
@@ -303,13 +307,20 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
         // Si t <= 0, collision
         if (t <= 0)
         {
-            // Calcul du point de contact R = Q - t*n
+            float penetration = -t;
             Vector3D displacement = planeNormalWorld.scalar(t);
             Vector3D contactPoint = vertexWorld - displacement;
 
-            // Ajout via addPlane
-            addPlane(box, plane, contactPoint, planeNormalWorld, -t, 0.5f, collision_type::Contact);
+            maxPenetration = std::max(maxPenetration, penetration);
+            accumulatedPoint = accumulatedPoint + contactPoint;
+            ++penetrationCount;
         }
+    }
+
+    if (penetrationCount > 0)
+    {
+        Vector3D averagePoint = accumulatedPoint.scalar(1.f / static_cast<float>(penetrationCount));
+        addPlane(box, plane, averagePoint, planeNormalWorld, maxPenetration, 0.5f, collision_type::Contact);
     }
 }
 
