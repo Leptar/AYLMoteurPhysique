@@ -90,5 +90,7 @@ private:
 	void broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies);
 	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
 
-    
+    void setupConfiningPlanes();
+
+	std::vector<RigidBodyBox> m_confiningPlanes;
 };

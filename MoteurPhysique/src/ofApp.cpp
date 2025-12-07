@@ -548,50 +548,6 @@ void ofApp::performRigidBodyGameReset()
 
         goalCenter.y = rigidBodyFloorY;
 
-        // Platesformes statiques : sol plat et quatre murs rigides pour entourer l'aire de jeu.
-        const float floorThickness = 8.f;
-        const float wallHeight = 240.f;
-        const float wallThickness = 12.f;
-        const Vector3D wallHalfExtents(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f);
-
-    RigidBodyBox floor = physicsWorld.createStaticPlatformBox(
-            Vector3D(0.f, rigidBodyFloorY - floorThickness, 0.f),
-            Vector3D(rigidBodyBoundsX, floorThickness, rigidBodyBoundsZ),
-            ofColor(32, 36, 54));
-    addRigidBodyBox(std::move(floor));
-
-    // Plateforme rigide dédiée au socle de la boîte d'objectif : collisions visibles à l'endroit où elle est dessinée.
-    const float goalPlatformThickness = 6.f;
-    RigidBodyBox goalPlatform = physicsWorld.createStaticPlatformBox(
-            Vector3D(goalCenter.x, rigidBodyFloorY + goalPlatformThickness, goalCenter.z),
-            Vector3D(goalSize * 0.5f, goalPlatformThickness, goalSize * 0.5f),
-            ofColor(56, 82, 126, 240));
-    addRigidBodyBox(std::move(goalPlatform));
-
-        RigidBodyBox northWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(0.f, rigidBodyFloorY + wallHalfExtents.y, rigidBodyBoundsZ + wallThickness * 0.5f),
-                wallHalfExtents,
-                ofColor(48, 58, 92, 220));
-        addRigidBodyBox(std::move(northWall));
-
-        RigidBodyBox southWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(0.f, rigidBodyFloorY + wallHalfExtents.y, -rigidBodyBoundsZ - wallThickness * 0.5f),
-                wallHalfExtents,
-                ofColor(48, 58, 92, 220));
-        addRigidBodyBox(std::move(southWall));
-
-        RigidBodyBox eastWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHalfExtents.y, 0.f),
-                Vector3D(wallThickness * 0.5f, wallHalfExtents.y, rigidBodyBoundsZ),
-                ofColor(48, 58, 92, 220));
-        addRigidBodyBox(std::move(eastWall));
-
-        RigidBodyBox westWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHalfExtents.y, 0.f),
-                Vector3D(wallThickness * 0.5f, wallHalfExtents.y, rigidBodyBoundsZ),
-                ofColor(48, 58, 92, 220));
-        addRigidBodyBox(std::move(westWall));
-
         auto initialBoxes = physicsWorld.createRigidBodyGame(100, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
         for (auto& box : initialBoxes) {
                 addRigidBodyBox(std::move(box));
@@ -654,84 +610,6 @@ void ofApp::updateRigidBodyGame(float dt)
 
 }
 
-//--------------------------------------------------------------
-void ofApp::applyRigidBodyBounds(RigidBodyBox& box)
-{
-        Vector3D position = box.body.getPosition();
-        Vector3D velocity = box.body.getVelocite();
-        Vector3D angular = box.body.getVelociteAngulaire();
-
-        float radius = box.boundingRadius;
-        bool touchedFloor = false;
-
-        if (position.y - radius < rigidBodyFloorY) {
-                position.y = rigidBodyFloorY + radius;
-                if (velocity.y < 0.f) {
-                        velocity.y = -velocity.y * rigidBodyBounce;
-                }
-                touchedFloor = true;
-        }
-
-        if (position.x - radius < -rigidBodyBoundsX) {
-                position.x = -rigidBodyBoundsX + radius;
-                if (velocity.x < 0.f) {
-                        velocity.x = -velocity.x * rigidBodyBounce;
-                }
-        } else if (position.x + radius > rigidBodyBoundsX) {
-                position.x = rigidBodyBoundsX - radius;
-                if (velocity.x > 0.f) {
-                        velocity.x = -velocity.x * rigidBodyBounce;
-                }
-        }
-
-        if (position.z - radius < -rigidBodyBoundsZ) {
-                position.z = -rigidBodyBoundsZ + radius;
-                if (velocity.z < 0.f) {
-                        velocity.z = -velocity.z * rigidBodyBounce;
-                }
-        } else if (position.z + radius > rigidBodyBoundsZ) {
-                position.z = rigidBodyBoundsZ - radius;
-                if (velocity.z > 0.f) {
-                        velocity.z = -velocity.z * rigidBodyBounce;
-                }
-        }
-
-        if (touchedFloor) {
-                velocity.x *= rigidBodyFloorFriction;
-                velocity.z *= rigidBodyFloorFriction;
-                angular = angular.scalar(rigidBodyFloorFriction);
-
-                if (std::abs(velocity.x) < 1e-2f) velocity.x = 0.f;
-                if (std::abs(velocity.y) < 1e-2f) velocity.y = 0.f;
-                if (std::abs(velocity.z) < 1e-2f) velocity.z = 0.f;
-        }
-
-        box.body.setPosition(position);
-        box.body.setVelocite(velocity);
-        box.body.setVelociteAngulaire(angular);
-}
-
-//--------------------------------------------------------------
-void ofApp::handleRigidBodyGoal(RigidBodyBox& box)
-{
-        if (box.reachedGoal || box.outOfBounds) {
-                return;
-        }
-
-        float halfGoal = goalSize * 0.5f;
-        Vector3D position = box.body.getPosition();
-        if (std::abs(position.x - goalCenter.x) <= halfGoal &&
-            std::abs(position.z - goalCenter.z) <= halfGoal &&
-            position.y - box.boundingRadius <= rigidBodyFloorY + 2.f) {
-                box.reachedGoal = true;
-                ++rigidBodyScore;
-
-                position.y = rigidBodyFloorY + box.boundingRadius;
-                box.body.setPosition(position);
-                box.body.setVelocite(Vector3D(0.f, 0.f, 0.f));
-                box.body.setVelociteAngulaire(Vector3D(0.f, 0.f, 0.f));
-        }
-}
 
 //--------------------------------------------------------------
 void ofApp::drawRigidBodyGame()
@@ -785,13 +663,7 @@ void ofApp::drawRigidBodyGame()
         ofDrawBox(0.f, 0.f, 0.f, 36.f, 12.f, 36.f);
         ofPopStyle();
         ofPopMatrix();
-
-        // Dessiner d'abord les plateformes statiques pour qu'elles correspondent aux volumes de collision.
-        for (const auto& box : rigidBodies) {
-                if (box.isStaticPlatform) {
-                        drawRigidBoxInstance(box);
-                }
-        }
+        
 
         for (const auto& box : rigidBodies) {
                 if (!box.isStaticPlatform) {

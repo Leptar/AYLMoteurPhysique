@@ -258,56 +258,49 @@ void SystemeCollisionDetection::addCableConstraint(Primitive* p1, Primitive* p2,
 // -----------------------------------------------------------------------
 void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
 {
-    // 1. Matrices de transformation
+    if (!box || !plane || !box->corpsRigide) return;
+
+    // La normale et l'offset du plan sont déjà en coordonnées monde.
+    const Vector3D& planeNormal = plane->normal;
+    const float planeOffset = plane->PlaneOffset;
+
+    // Obtenir la matrice de transformation pour passer les sommets de la boîte en coordonnées monde.
     Matrix4 boxToWorld = box->GetTransformMatrix();
-    Matrix4 planeToWorld = plane->GetTransformMatrix();
 
-    // 2. Calcul de la normale du plan en World Space
-    Vector3D localOrigin(0, 0, 0);
-    Vector3D worldOrigin = planeToWorld * localOrigin;
-    
-    Vector3D normalPosLocal = plane->normal; 
-    Vector3D normalPosWorld = planeToWorld * normalPosLocal;
-    
-    Vector3D planeNormalWorld = normalPosWorld - worldOrigin;
-    planeNormalWorld = planeNormalWorld.normalize();
-
-    // 3. Point de référence sur le plan (P)
-    Vector3D pointOnPlaneLocal = plane->normal.scalar(plane->PlaneOffset);
-    Vector3D pointOnPlaneWorld = planeToWorld * pointOnPlaneLocal;
-
-    // 4. Les 8 sommets de la boîte en Local
+    // Définir les 8 sommets de la boîte dans son espace local.
     float hx = box->HalfExtent.x;
     float hy = box->HalfExtent.y;
     float hz = box->HalfExtent.z;
 
     std::vector<Vector3D> verticesLocal = {
-        Vector3D( hx,  hy,  hz), Vector3D(-hx,  hy,  hz),
-        Vector3D( hx, -hy,  hz), Vector3D(-hx, -hy,  hz),
-        Vector3D( hx,  hy, -hz), Vector3D(-hx,  hy, -hz),
-        Vector3D( hx, -hy, -hz), Vector3D(-hx, -hy, -hz)
+        { hx,  hy,  hz}, {-hx,  hy,  hz},
+        { hx, -hy,  hz}, {-hx, -hy,  hz},
+        { hx,  hy, -hz}, {-hx,  hy, -hz},
+        { hx, -hy, -hz}, {-hx, -hy, -hz}
     };
 
-    // 5. Test intersection
+    float minDistance = std::numeric_limits<float>::max();
+    Vector3D deepestVertex;
+
+    // Trouver le sommet le plus pénétrant
     for (const auto& vertexLocal : verticesLocal)
     {
-        // Q: Sommet en World
         Vector3D vertexWorld = boxToWorld * vertexLocal;
+        float distance = vertexWorld.dot(planeNormal) + planeOffset;
 
-        // t = n . (Q - P)
-        Vector3D Q_minus_P = vertexWorld - pointOnPlaneWorld;
-        float t = planeNormalWorld.dot(Q_minus_P);
-
-        // Si t <= 0, collision
-        if (t <= 0)
+        if (distance < minDistance)
         {
-            // Calcul du point de contact R = Q - t*n
-            Vector3D displacement = planeNormalWorld.scalar(t);
-            Vector3D contactPoint = vertexWorld - displacement;
-
-            // Ajout via addPlane
-            addPlane(box, plane, contactPoint, planeNormalWorld, -t, 0.5f, collision_type::Contact);
+            minDistance = distance;
+            deepestVertex = vertexWorld;
         }
+    }
+
+    // S'il y a pénétration (la plus petite distance est négative), on génère UN SEUL contact.
+    if (minDistance <= 0.0f)
+    {
+        // Le point de contact est le sommet le plus profond.
+        // La pénétration est la valeur absolue de la distance.
+        add(box, plane, deepestVertex, planeNormal, -minDistance, 0.5f, collision_type::Contact);
     }
 }
 
@@ -324,7 +317,7 @@ void SystemeCollisionDetection::DetectBoxBox(Box* boxA, Box* boxB)
     const float radiusA = boxA->HalfExtent.GetNorm();
     const float radiusB = boxB->HalfExtent.GetNorm();
 
-    const Vector3D diff = centerB - centerA;
+    Vector3D diff = centerB - centerA;
     const float distance = diff.GetNorm();
     const float combinedRadius = radiusA + radiusB;
 

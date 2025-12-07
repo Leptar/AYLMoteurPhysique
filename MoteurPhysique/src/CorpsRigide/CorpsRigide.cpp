@@ -135,16 +135,23 @@ void CorpsRigide::calculateWorldAABB(const Primitive& primitive)
 {
     if (const Box* box = dynamic_cast<const Box*>(&primitive))
     {
-        // Calcule l'étendue de la boîte projetée sur chaque axe du monde.
-        // C'est plus efficace que de transformer les 8 sommets.
+        // Extraire manuellement la matrice de rotation 3x3 de la matrice de transformation 4x4
+        Matrix3 rotationMatrix(
+            m_transformMatrix.m[0], m_transformMatrix.m[4], m_transformMatrix.m[8],
+            m_transformMatrix.m[1], m_transformMatrix.m[5], m_transformMatrix.m[9],
+            m_transformMatrix.m[2], m_transformMatrix.m[6], m_transformMatrix.m[10]
+        );
+
         float ex = box->HalfExtent.x;
         float ey = box->HalfExtent.y;
         float ez = box->HalfExtent.z;
 
-        float rxx = std::abs(m_transformMatrix.m[0]); float rxy = std::abs(m_transformMatrix.m[1]); float rxz = std::abs(m_transformMatrix.m[2]);
-        float ryx = std::abs(m_transformMatrix.m[4]); float ryy = std::abs(m_transformMatrix.m[5]); float ryz = std::abs(m_transformMatrix.m[6]);
-        float rzx = std::abs(m_transformMatrix.m[8]); float rzy = std::abs(m_transformMatrix.m[9]); float rzz = std::abs(m_transformMatrix.m[10]);
-
+        // Projeter les demi-dimensions de la boîte sur les axes du monde en utilisant la matrice de rotation
+        float rxx = std::abs(rotationMatrix.m[0]); float rxy = std::abs(rotationMatrix.m[1]); float rxz = std::abs(rotationMatrix.m[2]);
+        float ryx = std::abs(rotationMatrix.m[3]); float ryy = std::abs(rotationMatrix.m[4]); float ryz = std::abs(rotationMatrix.m[5]);
+        float rzx = std::abs(rotationMatrix.m[6]); float rzy = std::abs(rotationMatrix.m[7]); float rzz = std::abs(rotationMatrix.m[8]);
+        
+        // Calculer la nouvelle demi-taille de l'AABB
         Vector3D halfSize(
             ex * rxx + ey * rxy + ez * rxz,
             ex * ryx + ey * ryy + ez * ryz,

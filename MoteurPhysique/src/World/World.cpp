@@ -29,6 +29,8 @@ World::World()
         // Initialiser les limites du monde pour l'Octree.
         float worldSize = 500.0f;
         m_worldBounds = AABB(Vector3D(-worldSize, -worldSize, -worldSize), Vector3D(worldSize, worldSize, worldSize));
+
+        setupConfiningPlanes();
 }
 
 World::~World()
@@ -157,7 +159,6 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
                 ofRandom(-1.8f, 1.8f),
                 ofRandom(-1.8f, 1.8f),
                 ofRandom(-1.8f, 1.8f));
-
         boxes.push_back(createRigidBodyBox(position, halfExtents, mass, color, initialVel, angularVel));
     }
 
@@ -210,6 +211,13 @@ void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
 
                 body_box.body.calculateWorldAABB(*body_box.primitive);
                 m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
+        }
+
+        // Insérer les plans de confinement statiques dans l'octree
+        for (auto& plane_box : m_confiningPlanes)
+        {
+                plane_box.primitive->corpsRigide = &plane_box.body;
+                m_octree->insert(plane_box.primitive.get(), m_worldBounds);
         }
 
         // Genere les paires potentielles en parcourant l'Octree
@@ -329,4 +337,45 @@ const std::vector<Contact>* World::getCollisionContacts() const
         }
 
         return &collisionSystem->detectedCollisions;
+}
+
+void World::setupConfiningPlanes()
+{
+        m_confiningPlanes.clear();
+        m_confiningPlanes.reserve(6);
+
+        float worldSize = 500.0f;
+
+        // Liste des normales et offsets pour les 6 faces de l'AABB
+        std::vector<std::pair<Vector3D, float>> planeDefs = {
+                // Normal, Offset
+                {Vector3D( 1,  0,  0),  worldSize}, // Mur gauche (X < -500),  n=( 1,0,0), d= 500 =>  x+500=0
+                {Vector3D(-1,  0,  0),  worldSize}, // Mur droit  (X >  500),  n=(-1,0,0), d= 500 => -x+500=0
+                {Vector3D( 0,  1,  0),  worldSize}, // Sol        (Y < -500),  n=( 0,1,0), d= 500 =>  y+500=0
+                {Vector3D( 0, -1,  0),  worldSize}, // Plafond    (Y >  500),  n=( 0,-1,0),d= 500 => -y+500=0
+                {Vector3D( 0,  0,  1),  worldSize}, // Arrière    (Z < -500),  n=( 0,0,1), d= 500 =>  z+500=0
+                {Vector3D( 0,  0, -1),  worldSize}  // Avant      (Z >  500),  n=( 0,0,-1),d= 500 => -z+500=0
+        };
+
+        for (const auto& def : planeDefs)
+        {
+                RigidBodyBox planeBox;
+                planeBox.isStaticPlatform = true;
+                planeBox.mass = 0.f;
+
+                // Le corps rigide est statique
+                planeBox.body.setInverseMasse(0.f);
+                planeBox.body.setInverseInertiaTensorBody(Matrix3(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f));
+                planeBox.body.setPosition(Vector3D(0,0,0)); // La position est gérée par l'offset du plan
+
+                // Création de la primitive Plane
+                auto primitivePlane = std::make_unique<Plane>();
+                primitivePlane->normal = def.first;
+                primitivePlane->PlaneOffset = def.second;
+                primitivePlane->corpsRigide = &planeBox.body;
+
+                planeBox.primitive = std::move(primitivePlane);
+
+                m_confiningPlanes.push_back(std::move(planeBox));
+        }
 }
