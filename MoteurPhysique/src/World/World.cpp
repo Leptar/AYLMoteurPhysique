@@ -262,15 +262,11 @@ void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
 	}
 
         broadPhaseDetection(rigidBodies);
-
         if (collisionSystem)
         {
                 collisionSystem->resolveAll();
         }
-
-        for (auto& bodybox : rigidBodies) {
-                bodybox.body.clearAccumulators();
-	}
+    
 
 }
 
