@@ -178,14 +178,23 @@ void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
 		m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
 	}
 
-	// Genere les paires potentielles en parcourant l'Octree
-	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
-	m_octree->generatePotentialCollisions(potentialCollisions);
+        // Genere les paires potentielles en parcourant l'Octree
+        std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
+        m_octree->generatePotentialCollisions(potentialCollisions);
 
-	// La méthode ci-dessus peut générer des doublons si un objet est retourné plusieurs fois.
-	// On trie et on supprime les doublons pour s'assurer que chaque paire est unique.
-	std::sort(potentialCollisions.begin(), potentialCollisions.end());
-	potentialCollisions.erase(std::unique(potentialCollisions.begin(), potentialCollisions.end()), potentialCollisions.end());
+        // Normalise l'ordre des pointeurs pour pouvoir supprimer les doublons (A,B) / (B,A)
+        for (auto& pair : potentialCollisions)
+        {
+            if (pair.second < pair.first)
+            {
+                std::swap(pair.first, pair.second);
+            }
+        }
+
+        // La méthode ci-dessus peut générer des doublons si un objet est retourné plusieurs fois.
+        // On trie et on supprime les doublons pour s'assurer que chaque paire est unique.
+        std::sort(potentialCollisions.begin(), potentialCollisions.end());
+        potentialCollisions.erase(std::unique(potentialCollisions.begin(), potentialCollisions.end()), potentialCollisions.end());
 
 	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
 	narrowPhaseDetection(potentialCollisions);
@@ -208,7 +217,7 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
         Primitive* p1 = pair.first;
         Primitive* p2 = pair.second;
 
-        if (!p1 || !p2) continue;
+        if (!p1 || !p2 || p1 == p2) continue;
 
         // 3. Identification des types (RTTI)
         // On essaie de caster p1 et p2 en Box ou Plane
@@ -226,6 +235,10 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
         {
             // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
             collisionSystem->DetectBoxPlane(box2, plane1);
+        }
+        else if (box1 && box2)
+        {
+            collisionSystem->DetectBoxBox(box1, box2);
         }
     }
 }
