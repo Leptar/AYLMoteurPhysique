@@ -237,6 +237,7 @@ void ofApp::drawHud() const
                 stream << "Perdues : " << rigidBodyLost << "\n";
                 stream << (applyGravityRigidBodies ? "[x]" : "[ ]") << " Gravité (G)\n";
                 stream << (drawOctree ? "[x]" : "[ ]") << " Afficher Octree (O)\n";
+                stream << (drawCollisionContacts ? "[x]" : "[ ]") << " Contacts de collision (C)\n";
                 stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
@@ -369,6 +370,8 @@ void ofApp::keyPressed(int key){
         if (key == 'c' || key == 'C') {
                 if (activeScene == SceneType::Phase2Blob) {
                         highlightCollisions = !highlightCollisions;
+                } else if (activeScene == SceneType::Phase3Game) {
+                        drawCollisionContacts = !drawCollisionContacts;
                 }
         }
 
@@ -523,7 +526,9 @@ void ofApp::setupRigidBodyGame()
 void ofApp::addRigidBodyBox(RigidBodyBox&& box)
 {
         rigidBodies.push_back(std::move(box));
-        ++totalRigidBodySpawned;
+        if (!rigidBodies.back().isStaticPlatform) {
+                ++totalRigidBodySpawned;
+        }
 }
 
 //--------------------------------------------------------------
@@ -542,6 +547,40 @@ void ofApp::performRigidBodyGameReset()
         clearRigidBodyMovementKeys();
 
         goalCenter.y = rigidBodyFloorY;
+
+        // Platesformes statiques : sol + quatre murs latéraux pour la phase 3.
+        const float wallHeight = 220.f;
+        const float wallThickness = 10.f;
+
+        RigidBodyBox floor = physicsWorld.createStaticPlatformBox(
+                Vector3D(0.f, rigidBodyFloorY - 6.f, 0.f),
+                Vector3D(rigidBodyBoundsX + 40.f, 6.f, rigidBodyBoundsZ + 40.f),
+                ofColor(28, 32, 52));
+        addRigidBodyBox(std::move(floor));
+
+        RigidBodyBox northWall = physicsWorld.createStaticPlatformBox(
+                Vector3D(0.f, rigidBodyFloorY + wallHeight * 0.5f, rigidBodyBoundsZ + wallThickness * 0.5f),
+                Vector3D(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f),
+                ofColor(48, 58, 92, 220));
+        addRigidBodyBox(std::move(northWall));
+
+        RigidBodyBox southWall = physicsWorld.createStaticPlatformBox(
+                Vector3D(0.f, rigidBodyFloorY + wallHeight * 0.5f, -rigidBodyBoundsZ - wallThickness * 0.5f),
+                Vector3D(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f),
+                ofColor(48, 58, 92, 220));
+        addRigidBodyBox(std::move(southWall));
+
+        RigidBodyBox eastWall = physicsWorld.createStaticPlatformBox(
+                Vector3D(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f),
+                Vector3D(wallThickness * 0.5f, wallHeight * 0.5f, rigidBodyBoundsZ),
+                ofColor(48, 58, 92, 220));
+        addRigidBodyBox(std::move(eastWall));
+
+        RigidBodyBox westWall = physicsWorld.createStaticPlatformBox(
+                Vector3D(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f),
+                Vector3D(wallThickness * 0.5f, wallHeight * 0.5f, rigidBodyBoundsZ),
+                ofColor(48, 58, 92, 220));
+        addRigidBodyBox(std::move(westWall));
 
         auto initialBoxes = physicsWorld.createRigidBodyGame(100, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
         for (auto& box : initialBoxes) {
@@ -690,21 +729,33 @@ void ofApp::drawRigidBodyGame()
         ofEnableDepthTest();
         rigidBodyCamera.begin();
 
-        ofPushStyle();
-        ofSetColor(28, 32, 52);
-        ofDrawBox(0.f, rigidBodyFloorY - 6.f, 0.f, rigidBodyBoundsX * 2.f + 80.f, 12.f, rigidBodyBoundsZ * 2.f + 80.f);
-        ofPopStyle();
+        auto drawRigidBoxInstance = [&](const RigidBodyBox& box)
+        {
+                ofPushMatrix();
+                ofMatrix4x4 transform = buildTransformMatrix(box.body.getOrientation(), box.body.getPosition());
+                ofMultMatrix(transform);
 
-        float wallHeight = 220.f;
-        float wallThickness = 10.f;
+                ofPushStyle();
+                ofColor drawColor = box.color;
+                if (!box.isStaticPlatform) {
+                        if (box.reachedGoal) {
+                                drawColor = box.color.getLerped(ofColor::white, 0.4f);
+                        } else if (box.outOfBounds) {
+                                drawColor = ofColor(80, 80, 80, 140);
+                        }
+                }
+                ofSetColor(drawColor);
 
-        ofPushStyle();
-        ofSetColor(48, 58, 92, 220);
-        ofDrawBox(0.f, rigidBodyFloorY + wallHeight * 0.5f, rigidBodyBoundsZ + wallThickness * 0.5f, rigidBodyBoundsX * 2.f, wallHeight, wallThickness);
-        ofDrawBox(0.f, rigidBodyFloorY + wallHeight * 0.5f, -rigidBodyBoundsZ - wallThickness * 0.5f, rigidBodyBoundsX * 2.f, wallHeight, wallThickness);
-        ofDrawBox(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f, wallThickness, wallHeight, rigidBodyBoundsZ * 2.f);
-        ofDrawBox(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f, wallThickness, wallHeight, rigidBodyBoundsZ * 2.f);
-        ofPopStyle();
+                if (drawRigidBodyWireframe) {
+                        ofNoFill();
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                        ofFill();
+                } else {
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                }
+                ofPopStyle();
+                ofPopMatrix();
+        };
 
         ofPushStyle();
         ofSetColor(100, 200, 160, 200);
@@ -725,29 +776,34 @@ void ofApp::drawRigidBodyGame()
         ofPopStyle();
         ofPopMatrix();
 
+        // Dessiner d'abord les plateformes statiques pour qu'elles correspondent aux volumes de collision.
         for (const auto& box : rigidBodies) {
-                ofPushMatrix();
-                ofMatrix4x4 transform = buildTransformMatrix(box.body.getOrientation(), box.body.getPosition());
-                ofMultMatrix(transform);
-
-                ofPushStyle();
-                ofColor drawColor = box.color;
-                if (box.reachedGoal) {
-                        drawColor = box.color.getLerped(ofColor::white, 0.4f);
-                } else if (box.outOfBounds) {
-                        drawColor = ofColor(80, 80, 80, 140);
+                if (box.isStaticPlatform) {
+                        drawRigidBoxInstance(box);
                 }
-                ofSetColor(drawColor);
+        }
 
-                if (drawRigidBodyWireframe) {
-                        ofNoFill();
-                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
-                        ofFill();
-                } else {
-                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+        for (const auto& box : rigidBodies) {
+                if (!box.isStaticPlatform) {
+                        drawRigidBoxInstance(box);
                 }
-                ofPopStyle();
-                ofPopMatrix();
+        }
+
+        if (drawCollisionContacts) {
+                if (const auto* contacts = physicsWorld.getCollisionContacts()) {
+                        ofPushStyle();
+                        ofSetColor(252, 88, 88, 220);
+                        for (const auto& contact : *contacts) {
+                                const Vector3D& point = contact.contactPoint;
+                                const Vector3D& normal = contact.contactNormal;
+                                ofDrawSphere(point.x, point.y, point.z, 4.f);
+
+                                Vector3D tip = point + normal.scalar(22.f);
+                                ofSetLineWidth(2.f);
+                                ofDrawLine(point.x, point.y, point.z, tip.x, tip.y, tip.z);
+                        }
+                        ofPopStyle();
+                }
         }
 
         if (drawOctree) {

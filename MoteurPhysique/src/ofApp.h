@@ -104,6 +104,7 @@ private:
 
         bool applyGravityRigidBodies = true;
         bool drawRigidBodyWireframe = false;
+        bool drawCollisionContacts = true;
 
         int rigidBodyScore = 0;
         int rigidBodyLost = 0;

@@ -1,6 +1,7 @@
 #include "World.h"
 
 #include <algorithm>
+#include <iostream>
 
 #include "ofMath.h"
 #include "ofMathConstants.h"
@@ -23,11 +24,11 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
-	collisionSystem = std::make_unique<SystemeCollisionDetection>();
+        collisionSystem = std::make_unique<SystemeCollisionDetection>();
 
-	// Initialiser les limites du monde pour l'Octree.
-	float worldSize = 500.0f;
-	m_worldBounds = AABB(Vector3D(-worldSize, -worldSize, -worldSize), Vector3D(worldSize, worldSize, worldSize));
+        // Initialiser les limites du monde pour l'Octree.
+        float worldSize = 500.0f;
+        m_worldBounds = AABB(Vector3D(-worldSize, -worldSize, -worldSize), Vector3D(worldSize, worldSize, worldSize));
 }
 
 World::~World()
@@ -65,11 +66,6 @@ const RigidBodyForceRegistry* World::getRigidBodyForceRegistry() const
 void World::applyRigidBodyForces(CorpsRigide& body, float deltaTime) const
 {
     m_rigidBodyForceRegistry.updateForces(body, deltaTime);
-}
-
-SystemCollisionDetection* World::getCollisionDetector()
-{
-    return &m_collisionDetector;
 }
 
 RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
@@ -168,24 +164,71 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
     return boxes;
 }
 
+RigidBodyBox World::createStaticPlatformBox(const Vector3D& position,
+                                            const Vector3D& halfExtents,
+                                            const ofColor& color) const
+{
+    RigidBodyBox platform;
+    platform.isStaticPlatform = true;
+    platform.halfExtents = halfExtents;
+    platform.mass = 0.f;
+    platform.color = color;
+
+    auto primitiveBox = std::make_unique<Box>(halfExtents);
+    primitiveBox->corpsRigide = &platform.body;
+    platform.primitive = std::move(primitiveBox);
+
+    Vector3D radiusVec = halfExtents;
+    platform.boundingRadius = std::max(radiusVec.GetNorm(), 6.f);
+
+    platform.body.setInverseMasse(0.f);
+    platform.body.setInverseInertiaTensorBody(Matrix3(0.f, 0.f, 0.f,
+                                                      0.f, 0.f, 0.f,
+                                                      0.f, 0.f, 0.f));
+    platform.body.setOrientation(Quaternion(1.f, 0.f, 0.f, 0.f));
+    platform.body.setPosition(position);
+    platform.body.setVelocite(Vector3D(0.f, 0.f, 0.f));
+    platform.body.setVelociteAngulaire(Vector3D(0.f, 0.f, 0.f));
+    platform.body.clearAccumulators();
+
+    return platform;
+}
+
 void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
-	// Construire l'octree
-	m_octree = std::make_unique<Octree>(m_worldBounds);
+        if (!collisionSystem)
+        {
+                return;
+        }
+
+        // Construire l'octree
+        m_octree = std::make_unique<Octree>(m_worldBounds);
 
 	// MAJ AABB et insert dans le octree
-	for (auto & body_box : rigidBodies) {
-		body_box.body.calculateWorldAABB(*body_box.primitive);
-		m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
-	}
+        for (auto & body_box : rigidBodies) {
+                // Rafraîchir le lien vers le corps rigide au cas où le vecteur a été réalloué.
+                body_box.primitive->corpsRigide = &body_box.body;
 
-	// Genere les paires potentielles en parcourant l'Octree
-	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
-	m_octree->generatePotentialCollisions(potentialCollisions);
+                body_box.body.calculateWorldAABB(*body_box.primitive);
+                m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
+        }
 
-	// La méthode ci-dessus peut générer des doublons si un objet est retourné plusieurs fois.
-	// On trie et on supprime les doublons pour s'assurer que chaque paire est unique.
-	std::sort(potentialCollisions.begin(), potentialCollisions.end());
-	potentialCollisions.erase(std::unique(potentialCollisions.begin(), potentialCollisions.end()), potentialCollisions.end());
+        // Genere les paires potentielles en parcourant l'Octree
+        std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
+        m_octree->generatePotentialCollisions(potentialCollisions);
+
+        // Normalise l'ordre des pointeurs pour pouvoir supprimer les doublons (A,B) / (B,A)
+        for (auto& pair : potentialCollisions)
+        {
+            if (pair.second < pair.first)
+            {
+                std::swap(pair.first, pair.second);
+            }
+        }
+
+        // La méthode ci-dessus peut générer des doublons si un objet est retourné plusieurs fois.
+        // On trie et on supprime les doublons pour s'assurer que chaque paire est unique.
+        std::sort(potentialCollisions.begin(), potentialCollisions.end());
+        potentialCollisions.erase(std::unique(potentialCollisions.begin(), potentialCollisions.end()), potentialCollisions.end());
 
 	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
 	narrowPhaseDetection(potentialCollisions);
@@ -208,7 +251,7 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
         Primitive* p1 = pair.first;
         Primitive* p2 = pair.second;
 
-        if (!p1 || !p2) continue;
+        if (!p1 || !p2 || p1 == p2) continue;
 
         // 3. Identification des types (RTTI)
         // On essaie de caster p1 et p2 en Box ou Plane
@@ -227,12 +270,16 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
             // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
             collisionSystem->DetectBoxPlane(box2, plane1);
         }
+        else if (box1 && box2)
+        {
+            collisionSystem->DetectBoxBox(box1, box2);
+        }
     }
 }
 
 void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
 {
-	// Particule
+        // Particule
     m_forceRegistry.updateForces(deltaTime);
 
     for (Particule* p : m_particules)
@@ -241,20 +288,28 @@ void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
         p->clearForce();
     }
 
-    m_collisionDetector.resolveAll();
+        // CorpsRigide
+        for (auto& bodybox : rigidBodies) {
+                if (bodybox.isStaticPlatform) {
+                        bodybox.body.clearAccumulators();
+                        continue;
+                }
+                applyRigidBodyForces(bodybox.body, deltaTime);
 
-	// CorpsRigide
-	for (auto& bodybox : rigidBodies) {
-		applyRigidBodyForces(bodybox.body, deltaTime);
+                bodybox.body.integrer(deltaTime);
+        }
 
-		bodybox.body.integrer(deltaTime);
-	}
+        broadPhaseDetection(rigidBodies);
 
-	broadPhaseDetection(rigidBodies);
-	collisionSystem->resolveAll();
+        if (collisionSystem)
+        {
+                std::cout << "[Collision] Contacts détectés cette frame : "
+                          << collisionSystem->count() << std::endl;
+                collisionSystem->resolveAll();
+        }
 
-	for (auto& bodybox : rigidBodies) {
-		bodybox.body.clearAccumulators();
+        for (auto& bodybox : rigidBodies) {
+                bodybox.body.clearAccumulators();
 	}
 
 }
@@ -265,4 +320,13 @@ void World::drawOctree() const
     {
         m_octree->draw();
     }
+}
+
+const std::vector<Contact>* World::getCollisionContacts() const
+{
+        if (!collisionSystem) {
+                return nullptr;
+        }
+
+        return &collisionSystem->detectedCollisions;
 }
