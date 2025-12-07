@@ -209,7 +209,7 @@ void ofApp::drawHud() const
         stream << "Scènes (Tab)\n";
         stream << ((activeScene == SceneType::Phase1Projectiles) ? "[x]" : "[ ]") << " Phase 1 - Projectiles (P)\n";
         stream << ((activeScene == SceneType::Phase2Blob) ? "[x]" : "[ ]") << " Phase 2 - Blob (B)\n\n";
-        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n\n";
+        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 et 4 - Jeu de caisses (J)\n\n";
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 stream << "Projectiles actifs : " << projectiles.size() << "\n";
