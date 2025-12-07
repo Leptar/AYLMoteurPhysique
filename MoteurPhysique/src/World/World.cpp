@@ -25,12 +25,10 @@ Vector3D normalizedAxis(float x, float y, float z)
 World::World()
 {
         collisionSystem = std::make_unique<SystemeCollisionDetection>();
+        setBoundaryRestitution(0.55f);
 
-        // Initialiser les limites du monde pour l'Octree.
-        float worldSize = 500.0f;
-        m_worldBounds = AABB(Vector3D(-worldSize, -worldSize, -worldSize), Vector3D(worldSize, worldSize, worldSize));
-
-        setupConfiningPlanes();
+    // Initialiser les limites du monde pour l'Octree.
+    setSimulationBounds(500.f, 500.f, -500.f, 500.f);
 }
 
 World::~World()
@@ -339,22 +337,31 @@ const std::vector<Contact>* World::getCollisionContacts() const
         return &collisionSystem->detectedCollisions;
 }
 
+void World::setSimulationBounds(float halfSizeX, float halfSizeZ, float floorY, float ceilingY)
+{
+        m_worldBounds = AABB(
+                Vector3D(-halfSizeX, floorY, -halfSizeZ),
+                Vector3D(halfSizeX, ceilingY, halfSizeZ));
+
+        setupConfiningPlanes();
+}
+
 void World::setupConfiningPlanes()
 {
         m_confiningPlanes.clear();
         m_confiningPlanes.reserve(6);
 
-        float worldSize = 500.0f;
+        Vector3D min = m_worldBounds.min;
+        Vector3D max = m_worldBounds.max;
 
         // Liste des normales et offsets pour les 6 faces de l'AABB
         std::vector<std::pair<Vector3D, float>> planeDefs = {
-                // Normal, Offset
-                {Vector3D( 1,  0,  0),  worldSize}, // Mur gauche (X < -500),  n=( 1,0,0), d= 500 =>  x+500=0
-                {Vector3D(-1,  0,  0),  worldSize}, // Mur droit  (X >  500),  n=(-1,0,0), d= 500 => -x+500=0
-                {Vector3D( 0,  1,  0),  worldSize}, // Sol        (Y < -500),  n=( 0,1,0), d= 500 =>  y+500=0
-                {Vector3D( 0, -1,  0),  worldSize}, // Plafond    (Y >  500),  n=( 0,-1,0),d= 500 => -y+500=0
-                {Vector3D( 0,  0,  1),  worldSize}, // Arrière    (Z < -500),  n=( 0,0,1), d= 500 =>  z+500=0
-                {Vector3D( 0,  0, -1),  worldSize}  // Avant      (Z >  500),  n=( 0,0,-1),d= 500 => -z+500=0
+                {Vector3D( 1,  0,  0), -min.x},
+                {Vector3D(-1,  0,  0),  max.x},
+                {Vector3D( 0,  1,  0), -min.y},
+                {Vector3D( 0, -1,  0),  max.y},
+                {Vector3D( 0,  0,  1), -min.z},
+                {Vector3D( 0,  0, -1),  max.z}
         };
 
         for (const auto& def : planeDefs)
@@ -378,4 +385,17 @@ void World::setupConfiningPlanes()
 
                 m_confiningPlanes.push_back(std::move(planeBox));
         }
+}
+
+void World::setBoundaryRestitution(float restitution)
+{
+        if (collisionSystem)
+        {
+                collisionSystem->setPlaneRestitution(restitution);
+        }
+}
+
+const AABB& World::getSimulationBounds() const
+{
+        return m_worldBounds;
 }

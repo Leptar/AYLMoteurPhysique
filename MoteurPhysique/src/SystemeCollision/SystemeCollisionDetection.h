@@ -16,6 +16,8 @@ public:
     SystemeCollisionDetection() = default;
     ~SystemeCollisionDetection() = default;
 
+    void setPlaneRestitution(float restitution);
+
     void add(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type);
 
     void addPlane(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type);
@@ -34,4 +36,7 @@ public:
 
     void DetectBoxPlane(Box* box, Plane* plane);
     void DetectBoxBox(Box* boxA, Box* boxB);
+
+private:
+    float planeRestitution = 0.5f;
 };
