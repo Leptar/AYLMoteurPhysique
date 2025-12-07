@@ -548,37 +548,39 @@ void ofApp::performRigidBodyGameReset()
 
         goalCenter.y = rigidBodyFloorY;
 
-        // Platesformes statiques : sol + quatre murs latéraux pour la phase 3.
-        const float wallHeight = 220.f;
-        const float wallThickness = 10.f;
+        // Platesformes statiques : sol plat et quatre murs rigides pour entourer l'aire de jeu.
+        const float floorThickness = 8.f;
+        const float wallHeight = 240.f;
+        const float wallThickness = 12.f;
+        const Vector3D wallHalfExtents(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f);
 
         RigidBodyBox floor = physicsWorld.createStaticPlatformBox(
-                Vector3D(0.f, rigidBodyFloorY - 6.f, 0.f),
-                Vector3D(rigidBodyBoundsX + 40.f, 6.f, rigidBodyBoundsZ + 40.f),
-                ofColor(28, 32, 52));
+                Vector3D(0.f, rigidBodyFloorY - floorThickness, 0.f),
+                Vector3D(rigidBodyBoundsX, floorThickness, rigidBodyBoundsZ),
+                ofColor(32, 36, 54));
         addRigidBodyBox(std::move(floor));
 
         RigidBodyBox northWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(0.f, rigidBodyFloorY + wallHeight * 0.5f, rigidBodyBoundsZ + wallThickness * 0.5f),
-                Vector3D(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f),
+                Vector3D(0.f, rigidBodyFloorY + wallHalfExtents.y, rigidBodyBoundsZ + wallThickness * 0.5f),
+                wallHalfExtents,
                 ofColor(48, 58, 92, 220));
         addRigidBodyBox(std::move(northWall));
 
         RigidBodyBox southWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(0.f, rigidBodyFloorY + wallHeight * 0.5f, -rigidBodyBoundsZ - wallThickness * 0.5f),
-                Vector3D(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f),
+                Vector3D(0.f, rigidBodyFloorY + wallHalfExtents.y, -rigidBodyBoundsZ - wallThickness * 0.5f),
+                wallHalfExtents,
                 ofColor(48, 58, 92, 220));
         addRigidBodyBox(std::move(southWall));
 
         RigidBodyBox eastWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f),
-                Vector3D(wallThickness * 0.5f, wallHeight * 0.5f, rigidBodyBoundsZ),
+                Vector3D(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHalfExtents.y, 0.f),
+                Vector3D(wallThickness * 0.5f, wallHalfExtents.y, rigidBodyBoundsZ),
                 ofColor(48, 58, 92, 220));
         addRigidBodyBox(std::move(eastWall));
 
         RigidBodyBox westWall = physicsWorld.createStaticPlatformBox(
-                Vector3D(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f),
-                Vector3D(wallThickness * 0.5f, wallHeight * 0.5f, rigidBodyBoundsZ),
+                Vector3D(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHalfExtents.y, 0.f),
+                Vector3D(wallThickness * 0.5f, wallHalfExtents.y, rigidBodyBoundsZ),
                 ofColor(48, 58, 92, 220));
         addRigidBodyBox(std::move(westWall));
 
