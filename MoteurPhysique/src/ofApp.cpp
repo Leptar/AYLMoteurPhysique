@@ -9,6 +9,7 @@
 #include "glm/vec3.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cctype>
 #include <limits>
@@ -810,20 +811,61 @@ void ofApp::setupOctreeDemo()
                 Vector3D(-rigidBodyBoundsX - boundsPadding, rigidBodyFloorY - 60.f, -rigidBodyBoundsZ - boundsPadding),
                 Vector3D(rigidBodyBoundsX + boundsPadding, rigidBodyFloorY + 420.f, rigidBodyBoundsZ + boundsPadding));
 
-        for (int i = 0; i < 10; ++i) {
+        Vector3D min = octreeBounds.min;
+        Vector3D max = octreeBounds.max;
+        Vector3D center = octreeBounds.getCenter();
+        Vector3D quarterSpan = (center - min).scalar(0.5f);
+
+        auto childMidpoint = [&](bool xUpper, bool yUpper, bool zUpper) {
+                float cx = ofLerp(xUpper ? center.x : min.x, xUpper ? max.x : center.x, 0.5f);
+                float cy = ofLerp(yUpper ? center.y : min.y, yUpper ? max.y : center.y, 0.5f);
+                float cz = ofLerp(zUpper ? center.z : min.z, zUpper ? max.z : center.z, 0.5f);
+                return Vector3D(cx, cy, cz);
+        };
+
+        std::array<Vector3D, 8> octantAnchors = {
+                childMidpoint(false, false, false),
+                childMidpoint(true, false, false),
+                childMidpoint(false, true, false),
+                childMidpoint(true, true, false),
+                childMidpoint(false, false, true),
+                childMidpoint(true, false, true),
+                childMidpoint(false, true, true),
+                childMidpoint(true, true, true)};
+
+        for (const Vector3D& anchor : octantAnchors) {
+                Vector3D offset(
+                        ofRandom(-quarterSpan.x, quarterSpan.x) * 0.35f,
+                        ofRandom(-quarterSpan.y, quarterSpan.y) * 0.35f,
+                        ofRandom(-quarterSpan.z, quarterSpan.z) * 0.35f);
+                Vector3D spawnPos = anchor + offset;
+
                 Vector3D halfExtents(
-                        ofRandom(12.f, 22.f),
-                        ofRandom(12.f, 24.f),
-                        ofRandom(12.f, 22.f));
+                        ofRandom(10.f, 18.f),
+                        ofRandom(10.f, 18.f),
+                        ofRandom(10.f, 18.f));
+                ofColor color = ofColor::fromHsb(ofRandom(110, 210), 180, 240);
+                Vector3D linearVel(ofRandom(-18.f, 18.f), ofRandom(-16.f, 10.f), ofRandom(-18.f, 18.f));
+                Vector3D angularVel(ofRandom(-1.4f, 1.4f), ofRandom(-1.4f, 1.4f), ofRandom(-1.4f, 1.4f));
+
+                RigidBodyBox box = physicsWorld.createRigidBodyBox(spawnPos, halfExtents, 22.f, color, linearVel, angularVel);
+                octreeBodies.push_back(std::move(box));
+        }
+
+        for (int i = 0; i < 2; ++i) {
+                Vector3D halfExtents(
+                        ofRandom(12.f, 20.f),
+                        ofRandom(12.f, 20.f),
+                        ofRandom(12.f, 20.f));
                 Vector3D spawnPos(
-                        ofRandom(-rigidBodyBoundsX * 0.6f, rigidBodyBoundsX * 0.6f),
-                        dropperSpawnHeight + ofRandom(-60.f, 40.f),
-                        ofRandom(-rigidBodyBoundsZ * 0.6f, rigidBodyBoundsZ * 0.6f));
+                        ofRandom(-rigidBodyBoundsX * 0.5f, rigidBodyBoundsX * 0.5f),
+                        dropperSpawnHeight + ofRandom(-40.f, 60.f),
+                        ofRandom(-rigidBodyBoundsZ * 0.5f, rigidBodyBoundsZ * 0.5f));
 
-                Vector3D linearVel(ofRandom(-30.f, 30.f), ofRandom(-10.f, 18.f), ofRandom(-30.f, 30.f));
-                Vector3D angularVel(ofRandom(-1.5f, 1.5f), ofRandom(-1.5f, 1.5f), ofRandom(-1.5f, 1.5f));
+                Vector3D linearVel(ofRandom(-26.f, 26.f), ofRandom(-14.f, 14.f), ofRandom(-26.f, 26.f));
+                Vector3D angularVel(ofRandom(-1.6f, 1.6f), ofRandom(-1.6f, 1.6f), ofRandom(-1.6f, 1.6f));
 
-                RigidBodyBox box = physicsWorld.createRigidBodyBox(spawnPos, halfExtents, 22.f, ofColor::lightBlue, linearVel, angularVel);
+                RigidBodyBox box = physicsWorld.createRigidBodyBox(spawnPos, halfExtents, 24.f, ofColor::lightBlue, linearVel, angularVel);
                 octreeBodies.push_back(std::move(box));
         }
 
@@ -941,6 +983,30 @@ void ofApp::drawOctreeNode(const Octree& node, int depth) const
         ofDrawBox(0.f, 0.f, 0.f, size.x, size.y, size.z);
         ofPopMatrix();
         ofPopStyle();
+
+        const auto& objects = node.getObjects();
+        if (!objects.empty()) {
+                float hue = ofMap(depth, 0, 6, 140, 255, true);
+                ofColor markerColor = ofColor::fromHsb(hue, 210, 245, 200);
+
+                ofPushStyle();
+                ofSetColor(markerColor);
+                for (Primitive* primitive : objects) {
+                        if (!primitive || !primitive->corpsRigide) {
+                                continue;
+                        }
+
+                        const AABB& aabb = primitive->corpsRigide->worldAABB;
+                        Vector3D objCenter = aabb.getCenter();
+                        Vector3D objSize = aabb.max - aabb.min;
+
+                        ofPushMatrix();
+                        ofTranslate(objCenter.x, objCenter.y, objCenter.z);
+                        ofDrawBox(0.f, 0.f, 0.f, objSize.x, objSize.y, objSize.z);
+                        ofPopMatrix();
+                }
+                ofPopStyle();
+        }
 
         if (!node.isSubdivided()) {
                 return;
