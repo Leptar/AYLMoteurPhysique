@@ -5,7 +5,6 @@
 #include "QuaternionTest.h"
 #include "ForceGenerator/ForceFriction.h"
 #include "ForceGenerator/ForceGravity.h"
-#include "MathStruct/AABB.h"
 #include "Tests/3DVectorTest.h"
 #include "glm/vec3.hpp"
 
@@ -124,9 +123,6 @@ void ofApp::update(){
         case SceneType::Phase3Game:
                 updateRigidBodyGame(dt);
                 break;
-        case SceneType::Phase4Octree:
-                updateRigidBodyGame(dt);
-                break;
         }
 }
 
@@ -145,10 +141,6 @@ void ofApp::draw(){
                 break;
         case SceneType::Phase3Game:
                 drawRigidBodyGame();
-                break;
-        case SceneType::Phase4Octree:
-                drawRigidBodyGame();
-                drawOctreeDebug();
                 break;
         }
 
@@ -217,8 +209,7 @@ void ofApp::drawHud() const
         stream << "Scènes (Tab)\n";
         stream << ((activeScene == SceneType::Phase1Projectiles) ? "[x]" : "[ ]") << " Phase 1 - Projectiles (P)\n";
         stream << ((activeScene == SceneType::Phase2Blob) ? "[x]" : "[ ]") << " Phase 2 - Blob (B)\n\n";
-        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n";
-        stream << ((activeScene == SceneType::Phase4Octree) ? "[x]" : "[ ]") << " Phase 4 - Octree & collisions (O)\n\n";
+        stream << ((activeScene == SceneType::Phase3Game) ? "[x]" : "[ ]") << " Phase 3 - Jeu de caisses (J)\n\n";
 
         if (activeScene == SceneType::Phase1Projectiles) {
                 stream << "Projectiles actifs : " << projectiles.size() << "\n";
@@ -239,20 +230,13 @@ void ofApp::drawHud() const
                 stream << "Détacher une particule : Backspace\n";
                 stream << "Réattacher toutes les particules : Entrée\n";
                 stream << "Réinitialiser le blob : R\n";
-        } else if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+        } else if (activeScene == SceneType::Phase3Game) {
                 int activeCrates = std::max(0, totalRigidBodySpawned - rigidBodyScore - rigidBodyLost);
                 stream << "Caisses actives : " << activeCrates << " / " << totalRigidBodySpawned << "\n";
                 stream << "Points : " << rigidBodyScore << "\n";
                 stream << "Perdues : " << rigidBodyLost << "\n";
                 stream << (applyGravityRigidBodies ? "[x]" : "[ ]") << " Gravité (G)\n";
                 stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
-                stream << (drawOctreeNodes ? "[x]" : "[ ]") << " Octree visible (T)\n";
-                stream << (drawContactPoints ? "[x]" : "[ ]") << " Points de contact (K)\n";
-                stream << (useRigidBodyTestEnvironment ? "[x]" : "[ ]") << " Environnement de test déterministe (Y)\n";
-                stream << (pauseRigidBodySimulation ? "[x]" : "[ ]") << " Pause simulation rigide (U)\n";
-                stream << "Avancer d'une frame (N)\n";
-                stream << "Paires potentielles : " << physicsWorld.getLastPotentialPairs().size() << "\n";
-                stream << "Contacts détectés : " << physicsWorld.getLastContacts().size() << "\n";
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
                 stream << "Réinitialiser : R\n";
@@ -314,8 +298,6 @@ void ofApp::keyPressed(int key){
                         activeScene = SceneType::Phase2Blob;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         activeScene = SceneType::Phase3Game;
-                } else if (activeScene == SceneType::Phase3Game) {
-                        activeScene = SceneType::Phase4Octree;
                 } else {
                         activeScene = SceneType::Phase1Projectiles;
                 }
@@ -323,7 +305,7 @@ void ofApp::keyPressed(int key){
                 if (activeScene != SceneType::Phase2Blob) {
                         clearBlobMovementKeys();
                 }
-                if (activeScene != SceneType::Phase3Game && activeScene != SceneType::Phase4Octree) {
+                if (activeScene != SceneType::Phase3Game) {
                         clearRigidBodyMovementKeys();
                 }
         }
@@ -342,10 +324,6 @@ void ofApp::keyPressed(int key){
                 clearBlobMovementKeys();
                 clearRigidBodyMovementKeys();
         }
-        if (key == 'o' || key == 'O') {
-                activeScene = SceneType::Phase4Octree;
-                clearBlobMovementKeys();
-        }
 
         if (key == 'h' || key == 'H') {
                 showHud = !showHud;
@@ -356,7 +334,7 @@ void ofApp::keyPressed(int key){
                         applyGravityPhase1 = !applyGravityPhase1;
                 } else if (activeScene == SceneType::Phase2Blob) {
                         applyGravityBlob = !applyGravityBlob;
-                } else if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                } else if (activeScene == SceneType::Phase3Game) {
                         applyGravityRigidBodies = !applyGravityRigidBodies;
                 }
         }
@@ -394,41 +372,13 @@ void ofApp::keyPressed(int key){
         }
 
         if (key == 'x' || key == 'X') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                if (activeScene == SceneType::Phase3Game) {
                         drawRigidBodyWireframe = !drawRigidBodyWireframe;
                 }
         }
 
-        if (key == 't' || key == 'T') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
-                        drawOctreeNodes = !drawOctreeNodes;
-                }
-        }
-        if (key == 'k' || key == 'K') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
-                        drawContactPoints = !drawContactPoints;
-                }
-        }
-        if (key == 'y' || key == 'Y') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
-                        useRigidBodyTestEnvironment = !useRigidBodyTestEnvironment;
-                        performRigidBodyGameReset();
-                }
-        }
-        if (key == 'u' || key == 'U') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
-                        pauseRigidBodySimulation = !pauseRigidBodySimulation;
-                }
-        }
-        if (key == 'n' || key == 'N') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
-                        pauseRigidBodySimulation = true;
-                        stepRigidBodyOnce = true;
-                }
-        }
-
         if (key == ' ') {
-                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                if (activeScene == SceneType::Phase3Game) {
                         spawnRigidBodyFromDropper();
                 }
         }
@@ -440,7 +390,7 @@ void ofApp::keyPressed(int key){
                 } else if (activeScene == SceneType::Phase2Blob) {
                         // Reconstruire le blob dans sa configuration d'origine.
                         blob.reset(blobBounds);
-                } else if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                } else if (activeScene == SceneType::Phase3Game) {
                         resetRigidBodyGame();
                 }
         }
@@ -576,8 +526,6 @@ void ofApp::performRigidBodyGameReset()
         rigidBodies.reserve(48);
         pendingRigidBodySpawns.clear();
 
-        stepRigidBodyOnce = false;
-
         rigidBodyScore = 0;
         rigidBodyLost = 0;
         totalRigidBodySpawned = 0;
@@ -588,18 +536,9 @@ void ofApp::performRigidBodyGameReset()
 
         goalCenter.y = rigidBodyFloorY;
 
-        physicsWorld.setWorldBounds(AABB(
-                Vector3D(-rigidBodyBoundsX - 80.f, rigidBodyFloorY - 200.f, -rigidBodyBoundsZ - 80.f),
-                Vector3D(rigidBodyBoundsX + 80.f, rigidBodyFloorY + 620.f, rigidBodyBoundsZ + 80.f)));
-        physicsWorld.configureBoundaries(rigidBodyFloorY, rigidBodyBoundsX, rigidBodyBoundsZ);
-
-        if (useRigidBodyTestEnvironment) {
-                buildRigidBodyTestEnvironment();
-        } else {
-                auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
-                for (auto& box : initialBoxes) {
-                        addRigidBodyBox(std::move(box));
-                }
+        auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
+        for (auto& box : initialBoxes) {
+                addRigidBodyBox(std::move(box));
         }
 }
 
@@ -607,35 +546,6 @@ void ofApp::performRigidBodyGameReset()
 void ofApp::resetRigidBodyGame()
 {
         rigidBodyResetRequested = true;
-}
-
-//--------------------------------------------------------------
-void ofApp::buildRigidBodyTestEnvironment()
-{
-        auto spawnBox = [&](const Vector3D& position, const Vector3D& halfExtents, float mass,
-                            const Vector3D& linearVel, const Vector3D& angularVel, const ofColor& color)
-        {
-                addRigidBodyBox(physicsWorld.createRigidBodyBox(position, halfExtents, mass, color, linearVel, angularVel));
-        };
-
-        // Collision frontale de deux caisses pour vérifier les impulsions et la symétrie.
-        spawnBox(Vector3D(-90.f, rigidBodyFloorY + 70.f, -60.f), Vector3D(16.f, 20.f, 16.f), 24.f,
-                 Vector3D(36.f, -5.f, 18.f), Vector3D(0.f, 0.8f, 0.f), ofColor(255, 180, 80));
-        spawnBox(Vector3D(90.f, rigidBodyFloorY + 70.f, -60.f), Vector3D(16.f, 20.f, 16.f), 24.f,
-                 Vector3D(-36.f, -5.f, 18.f), Vector3D(0.f, -0.8f, 0.f), ofColor(100, 210, 255));
-
-        // Pile de caisses statiques pour inspecter la stabilité verticale.
-        for (int i = 0; i < 3; ++i) {
-                float y = rigidBodyFloorY + 22.f + i * 44.f;
-                spawnBox(Vector3D(-40.f, y, 120.f), Vector3D(22.f, 22.f, 22.f), 32.f,
-                         Vector3D(0.f, 0.f, 0.f), Vector3D(0.f, 0.f, 0.f), ofColor(180, 140 + i * 20, 200));
-        }
-
-        // Collision en oblique avec rotation pour tester la friction et l'octree.
-        spawnBox(Vector3D(-120.f, rigidBodyFloorY + 120.f, 120.f), Vector3D(18.f, 14.f, 26.f), 26.f,
-                 Vector3D(48.f, -12.f, -28.f), Vector3D(0.f, 1.2f, 0.3f), ofColor(255, 140, 120));
-        spawnBox(Vector3D(40.f, rigidBodyFloorY + 120.f, 200.f), Vector3D(20.f, 16.f, 20.f), 28.f,
-                 Vector3D(-28.f, -8.f, -48.f), Vector3D(0.4f, -1.1f, 0.f), ofColor(120, 200, 255));
 }
 
 //--------------------------------------------------------------
@@ -690,25 +600,81 @@ void ofApp::updateRigidBodyGame(float dt)
         dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
         dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
 
-        bool shouldSimulate = !pauseRigidBodySimulation || stepRigidBodyOnce;
-        if (shouldSimulate) {
-                physicsWorld.simulateRigidBodies(rigidBodies, dt);
-                stepRigidBodyOnce = false;
+        for (auto& box : rigidBodies) {
+                if (box.reachedGoal || box.outOfBounds) {
+                        continue;
+                }
 
-                for (auto& box : rigidBodies) {
-                        if (box.reachedGoal || box.outOfBounds) {
-                                continue;
-                        }
+                physicsWorld.applyRigidBodyForces(box.body, dt);
 
-                        handleRigidBodyGoal(box);
+                box.body.integrer(dt);
 
-                        Vector3D position = box.body.getPosition();
-                        if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
-                                box.outOfBounds = true;
-                                ++rigidBodyLost;
-                        }
+                applyRigidBodyBounds(box);
+                handleRigidBodyGoal(box);
+
+                Vector3D position = box.body.getPosition();
+                if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
+                        box.outOfBounds = true;
+                        ++rigidBodyLost;
                 }
         }
+}
+
+//--------------------------------------------------------------
+void ofApp::applyRigidBodyBounds(RigidBodyBox& box)
+{
+        Vector3D position = box.body.getPosition();
+        Vector3D velocity = box.body.getVelocite();
+        Vector3D angular = box.body.getVelociteAngulaire();
+
+        float radius = box.boundingRadius;
+        bool touchedFloor = false;
+
+        if (position.y - radius < rigidBodyFloorY) {
+                position.y = rigidBodyFloorY + radius;
+                if (velocity.y < 0.f) {
+                        velocity.y = -velocity.y * rigidBodyBounce;
+                }
+                touchedFloor = true;
+        }
+
+        if (position.x - radius < -rigidBodyBoundsX) {
+                position.x = -rigidBodyBoundsX + radius;
+                if (velocity.x < 0.f) {
+                        velocity.x = -velocity.x * rigidBodyBounce;
+                }
+        } else if (position.x + radius > rigidBodyBoundsX) {
+                position.x = rigidBodyBoundsX - radius;
+                if (velocity.x > 0.f) {
+                        velocity.x = -velocity.x * rigidBodyBounce;
+                }
+        }
+
+        if (position.z - radius < -rigidBodyBoundsZ) {
+                position.z = -rigidBodyBoundsZ + radius;
+                if (velocity.z < 0.f) {
+                        velocity.z = -velocity.z * rigidBodyBounce;
+                }
+        } else if (position.z + radius > rigidBodyBoundsZ) {
+                position.z = rigidBodyBoundsZ - radius;
+                if (velocity.z > 0.f) {
+                        velocity.z = -velocity.z * rigidBodyBounce;
+                }
+        }
+
+        if (touchedFloor) {
+                velocity.x *= rigidBodyFloorFriction;
+                velocity.z *= rigidBodyFloorFriction;
+                angular = angular.scalar(rigidBodyFloorFriction);
+
+                if (std::abs(velocity.x) < 1e-2f) velocity.x = 0.f;
+                if (std::abs(velocity.y) < 1e-2f) velocity.y = 0.f;
+                if (std::abs(velocity.z) < 1e-2f) velocity.z = 0.f;
+        }
+
+        box.body.setPosition(position);
+        box.body.setVelocite(velocity);
+        box.body.setVelociteAngulaire(angular);
 }
 
 //--------------------------------------------------------------
@@ -804,57 +770,9 @@ void ofApp::drawRigidBodyGame()
 }
 
 //--------------------------------------------------------------
-void ofApp::drawOctreeDebug()
-{
-        const Octree* octree = physicsWorld.getOctree();
-        if (!octree || !drawOctreeNodes)
-                return;
-
-        ofEnableDepthTest();
-        rigidBodyCamera.begin();
-
-        std::vector<AABB> nodes = physicsWorld.getOctreeDebugBounds();
-        ofPushStyle();
-        ofNoFill();
-        ofSetColor(120, 220, 255, 120);
-        for (const auto& node : nodes) {
-                Vector3D size = node.max - node.min;
-                Vector3D center = node.getCenter();
-                ofDrawBox(center.x, center.y, center.z, size.x, size.y, size.z);
-        }
-        ofPopStyle();
-
-        if (drawContactPoints) {
-                ofPushStyle();
-                ofSetColor(255, 120, 100);
-                for (const auto& contact : physicsWorld.getLastContacts()) {
-                        ofDrawSphere(contact.contactPoint.x, contact.contactPoint.y, contact.contactPoint.z, 4.f);
-                        Vector3D end = contact.contactPoint + contact.contactNormal.scalar(18.f);
-                        ofDrawLine(contact.contactPoint.x, contact.contactPoint.y, contact.contactPoint.z,
-                                   end.x, end.y, end.z);
-                }
-                ofPopStyle();
-        }
-
-        ofPushStyle();
-        ofSetColor(180, 160, 255, 140);
-        for (const auto& pair : physicsWorld.getLastPotentialPairs()) {
-                if (!pair.first || !pair.second) continue;
-                if (!pair.first->corpsRigide || !pair.second->corpsRigide) continue;
-                Vector3D p1 = pair.first->corpsRigide->getPosition();
-                Vector3D p2 = pair.second->corpsRigide->getPosition();
-                ofDrawLine(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
-        }
-        ofPopStyle();
-
-        rigidBodyCamera.end();
-        ofDisableDepthTest();
-}
-
-//--------------------------------------------------------------
 void ofApp::setRigidBodyMovementKey(int key, bool isPressed)
 {
-        if (activeScene != SceneType::Phase3Game && activeScene != SceneType::Phase4Octree)
+        if (activeScene != SceneType::Phase3Game)
                 return;
 
         switch (key) {

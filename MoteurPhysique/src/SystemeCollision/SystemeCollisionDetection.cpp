@@ -187,6 +187,7 @@ void SystemeCollisionDetection::resolveAll()
         Vector3D impulse = contact.contactNormal.scalar(impulseScalar);
 
         // --- Application de l'Impulsion ---
+        // ATTENTION : CorpsRigide n'a pas de addVelocite, on utilise get + set
 
         if (bodyA)
         {
@@ -213,8 +214,6 @@ void SystemeCollisionDetection::resolveAll()
             bodyB->setVelociteAngulaire(bodyB->getVelociteAngulaire() + angularChange);
         }
     }
-
-    detectedCollisions.clear();
 }
 
 std::size_t SystemeCollisionDetection::count() const
@@ -267,10 +266,10 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
     // 2. Calcul de la normale du plan en World Space
     Vector3D localOrigin(0, 0, 0);
     Vector3D worldOrigin = planeToWorld * localOrigin;
-
-    Vector3D normalPosLocal = plane->normal;
+    
+    Vector3D normalPosLocal = plane->normal; 
     Vector3D normalPosWorld = planeToWorld * normalPosLocal;
-
+    
     Vector3D planeNormalWorld = normalPosWorld - worldOrigin;
     planeNormalWorld = planeNormalWorld.normalize();
 
@@ -290,11 +289,7 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
         Vector3D( hx, -hy, -hz), Vector3D(-hx, -hy, -hz)
     };
 
-    // 5. Test intersection : on conserve uniquement le contact le plus profond
-    float maxPenetration = 0.f;
-    Vector3D accumulatedPoint;
-    int penetrationCount = 0;
-
+    // 5. Test intersection
     for (const auto& vertexLocal : verticesLocal)
     {
         // Q: Sommet en World
@@ -307,78 +302,12 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
         // Si t <= 0, collision
         if (t <= 0)
         {
-            float penetration = -t;
+            // Calcul du point de contact R = Q - t*n
             Vector3D displacement = planeNormalWorld.scalar(t);
             Vector3D contactPoint = vertexWorld - displacement;
 
-            maxPenetration = std::max(maxPenetration, penetration);
-            accumulatedPoint = accumulatedPoint + contactPoint;
-            ++penetrationCount;
+            // Ajout via addPlane
+            addPlane(box, plane, contactPoint, planeNormalWorld, -t, 0.5f, collision_type::Contact);
         }
     }
-
-    if (penetrationCount > 0)
-    {
-        Vector3D averagePoint = accumulatedPoint.scalar(1.f / static_cast<float>(penetrationCount));
-
-        // La normale de contact doit pointer du premier corps (la boîte) vers le second (le plan)
-        // afin que les corrections de pénétration et l'impulsion soient appliquées dans le bon sens.
-        Vector3D contactNormal = planeNormalWorld.scalar(-1.f);
-
-        addPlane(box, plane, averagePoint, contactNormal, maxPenetration, 0.5f, collision_type::Contact);
-    }
-}
-
-void SystemeCollisionDetection::DetectBoxBox(Box* boxA, Box* boxB)
-{
-    if (!boxA || !boxB || !boxA->corpsRigide || !boxB->corpsRigide)
-    {
-        return;
-    }
-
-    const AABB& boundsA = boxA->corpsRigide->worldAABB;
-    const AABB& boundsB = boxB->corpsRigide->worldAABB;
-
-    float overlapX = std::min(boundsA.max.x, boundsB.max.x) - std::max(boundsA.min.x, boundsB.min.x);
-    float overlapY = std::min(boundsA.max.y, boundsB.max.y) - std::max(boundsA.min.y, boundsB.min.y);
-    float overlapZ = std::min(boundsA.max.z, boundsB.max.z) - std::max(boundsA.min.z, boundsB.min.z);
-
-    if (overlapX <= 0.f || overlapY <= 0.f || overlapZ <= 0.f)
-    {
-        return; // Aucun recouvrement AABB : pas de collision.
-    }
-
-    // Axe de séparation le plus faible : normale et pénétration.
-    float penetration = overlapX;
-    Vector3D normal(1.f, 0.f, 0.f);
-
-    if (overlapY < penetration)
-    {
-        penetration = overlapY;
-        normal = Vector3D(0.f, 1.f, 0.f);
-    }
-    if (overlapZ < penetration)
-    {
-        penetration = overlapZ;
-        normal = Vector3D(0.f, 0.f, 1.f);
-    }
-
-    Vector3D centerA = boundsA.getCenter();
-    Vector3D centerB = boundsB.getCenter();
-
-    // Orienter la normale de A vers B.
-    if ((normal.x != 0.f && centerB.x < centerA.x) ||
-        (normal.y != 0.f && centerB.y < centerA.y) ||
-        (normal.z != 0.f && centerB.z < centerA.z))
-    {
-        normal = normal.scalar(-1.f);
-    }
-
-    // Point de contact approximé au centre de la zone de recouvrement.
-    Vector3D contactPoint(
-        std::max(boundsA.min.x, boundsB.min.x) + overlapX * 0.5f,
-        std::max(boundsA.min.y, boundsB.min.y) + overlapY * 0.5f,
-        std::max(boundsA.min.z, boundsB.min.z) + overlapZ * 0.5f);
-
-    add(boxA, boxB, contactPoint, normal, penetration, 0.45f, collision_type::Contact);
 }

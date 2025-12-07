@@ -32,7 +32,7 @@ class ofApp : public ofBaseApp{
                 void gotMessage(ofMessage msg);
         private:
                 /// Machine à états simple qui identifie la démonstration active.
-                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game, Phase4Octree };
+                enum class SceneType { Phase1Projectiles, Phase2Blob, Phase3Game };
 
                 /// Applique toutes les forces configurées aux projectiles actifs avant de les intégrer.
                 void updateProjectiles(float dt);
@@ -66,8 +66,6 @@ class ofApp : public ofBaseApp{
                 void addRigidBodyBox(RigidBodyBox&& box);
                 /// Effectue immédiatement la réinitialisation de la scène du jeu.
                 void performRigidBodyGameReset();
-                /// Construit un environnement de test déterministe pour déboguer les collisions.
-                void buildRigidBodyTestEnvironment();
                 /// Fait progresser la simulation du mini-jeu de la phase 3.
                 void updateRigidBodyGame(float dt);
                 /// Dessine l'aire de jeu ainsi que les corps rigides actifs.
@@ -76,10 +74,10 @@ class ofApp : public ofBaseApp{
                 void spawnRigidBodyFromDropper();
                 /// Replace la scène du jeu dans son état initial.
                 void resetRigidBodyGame();
+                /// Applique les contraintes de l'aire de jeu au corps spécifié.
+                void applyRigidBodyBounds(RigidBodyBox& box);
                 /// Met à jour l'état de la zone de but pour le corps donné.
                 void handleRigidBodyGoal(RigidBodyBox& box);
-                /// Affiche la structure de l'octree et les contacts détectés.
-                void drawOctreeDebug();
                 /// Suit les entrées clavier propres au distributeur de la phase 3.
                 void setRigidBodyMovementKey(int key, bool isPressed);
                 /// Réinitialise les indicateurs de déplacement du distributeur de la phase 3.
@@ -106,11 +104,6 @@ class ofApp : public ofBaseApp{
 
                 bool applyGravityRigidBodies = true;
                 bool drawRigidBodyWireframe = false;
-                bool drawOctreeNodes = true;
-                bool drawContactPoints = true;
-                bool useRigidBodyTestEnvironment = false;
-                bool pauseRigidBodySimulation = false;
-                bool stepRigidBodyOnce = false;
 
                 int rigidBodyScore = 0;
                 int rigidBodyLost = 0;
