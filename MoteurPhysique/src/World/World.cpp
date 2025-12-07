@@ -174,10 +174,13 @@ void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
         m_octree = std::make_unique<Octree>(m_worldBounds);
 
 	// MAJ AABB et insert dans le octree
-	for (auto & body_box : rigidBodies) {
-		body_box.body.calculateWorldAABB(*body_box.primitive);
-		m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
-	}
+        for (auto & body_box : rigidBodies) {
+                // Rafraîchir le lien vers le corps rigide au cas où le vecteur a été réalloué.
+                body_box.primitive->corpsRigide = &body_box.body;
+
+                body_box.body.calculateWorldAABB(*body_box.primitive);
+                m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
+        }
 
         // Genere les paires potentielles en parcourant l'Octree
         std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
