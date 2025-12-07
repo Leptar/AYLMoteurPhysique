@@ -320,7 +320,12 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
     if (penetrationCount > 0)
     {
         Vector3D averagePoint = accumulatedPoint.scalar(1.f / static_cast<float>(penetrationCount));
-        addPlane(box, plane, averagePoint, planeNormalWorld, maxPenetration, 0.5f, collision_type::Contact);
+
+        // La normale de contact doit pointer du premier corps (la boîte) vers le second (le plan)
+        // afin que les corrections de pénétration et l'impulsion soient appliquées dans le bon sens.
+        Vector3D contactNormal = planeNormalWorld.scalar(-1.f);
+
+        addPlane(box, plane, averagePoint, contactNormal, maxPenetration, 0.5f, collision_type::Contact);
     }
 }
 
