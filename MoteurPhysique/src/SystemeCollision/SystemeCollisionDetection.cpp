@@ -310,3 +310,33 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
         }
     }
 }
+
+void SystemeCollisionDetection::DetectBoxBox(Box* boxA, Box* boxB)
+{
+    if (!boxA || !boxB || !boxA->corpsRigide || !boxB->corpsRigide)
+    {
+        return;
+    }
+
+    const Vector3D centerA = boxA->corpsRigide->getPosition();
+    const Vector3D centerB = boxB->corpsRigide->getPosition();
+
+    const float radiusA = boxA->HalfExtent.GetNorm();
+    const float radiusB = boxB->HalfExtent.GetNorm();
+
+    const Vector3D diff = centerB - centerA;
+    const float distance = diff.GetNorm();
+    const float combinedRadius = radiusA + radiusB;
+
+    if (distance >= combinedRadius || distance <= 1e-4f)
+    {
+        return;
+    }
+
+    Vector3D normal = diff.scalar(1.f / distance);
+    const float penetration = combinedRadius - distance;
+
+    const Vector3D contactPoint = centerA + normal.scalar(radiusA - penetration * 0.5f);
+
+    add(boxA, boxB, contactPoint, normal, penetration, 0.5f, collision_type::Contact);
+}
