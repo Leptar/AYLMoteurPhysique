@@ -66,6 +66,8 @@ class ofApp : public ofBaseApp{
                 void addRigidBodyBox(RigidBodyBox&& box);
                 /// Effectue immédiatement la réinitialisation de la scène du jeu.
                 void performRigidBodyGameReset();
+                /// Construit un environnement de test déterministe pour déboguer les collisions.
+                void buildRigidBodyTestEnvironment();
                 /// Fait progresser la simulation du mini-jeu de la phase 3.
                 void updateRigidBodyGame(float dt);
                 /// Dessine l'aire de jeu ainsi que les corps rigides actifs.
@@ -106,6 +108,9 @@ class ofApp : public ofBaseApp{
                 bool drawRigidBodyWireframe = false;
                 bool drawOctreeNodes = true;
                 bool drawContactPoints = true;
+                bool useRigidBodyTestEnvironment = false;
+                bool pauseRigidBodySimulation = false;
+                bool stepRigidBodyOnce = false;
 
                 int rigidBodyScore = 0;
                 int rigidBodyLost = 0;

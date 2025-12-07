@@ -248,6 +248,11 @@ void ofApp::drawHud() const
                 stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
                 stream << (drawOctreeNodes ? "[x]" : "[ ]") << " Octree visible (T)\n";
                 stream << (drawContactPoints ? "[x]" : "[ ]") << " Points de contact (K)\n";
+                stream << (useRigidBodyTestEnvironment ? "[x]" : "[ ]") << " Environnement de test déterministe (Y)\n";
+                stream << (pauseRigidBodySimulation ? "[x]" : "[ ]") << " Pause simulation rigide (U)\n";
+                stream << "Avancer d'une frame (N)\n";
+                stream << "Paires potentielles : " << physicsWorld.getLastPotentialPairs().size() << "\n";
+                stream << "Contacts détectés : " << physicsWorld.getLastContacts().size() << "\n";
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
                 stream << "Réinitialiser : R\n";
@@ -404,6 +409,23 @@ void ofApp::keyPressed(int key){
                         drawContactPoints = !drawContactPoints;
                 }
         }
+        if (key == 'y' || key == 'Y') {
+                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                        useRigidBodyTestEnvironment = !useRigidBodyTestEnvironment;
+                        performRigidBodyGameReset();
+                }
+        }
+        if (key == 'u' || key == 'U') {
+                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                        pauseRigidBodySimulation = !pauseRigidBodySimulation;
+                }
+        }
+        if (key == 'n' || key == 'N') {
+                if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
+                        pauseRigidBodySimulation = true;
+                        stepRigidBodyOnce = true;
+                }
+        }
 
         if (key == ' ') {
                 if (activeScene == SceneType::Phase3Game || activeScene == SceneType::Phase4Octree) {
@@ -554,6 +576,8 @@ void ofApp::performRigidBodyGameReset()
         rigidBodies.reserve(48);
         pendingRigidBodySpawns.clear();
 
+        stepRigidBodyOnce = false;
+
         rigidBodyScore = 0;
         rigidBodyLost = 0;
         totalRigidBodySpawned = 0;
@@ -569,9 +593,13 @@ void ofApp::performRigidBodyGameReset()
                 Vector3D(rigidBodyBoundsX + 80.f, rigidBodyFloorY + 620.f, rigidBodyBoundsZ + 80.f)));
         physicsWorld.configureBoundaries(rigidBodyFloorY, rigidBodyBoundsX, rigidBodyBoundsZ);
 
-        auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
-        for (auto& box : initialBoxes) {
-                addRigidBodyBox(std::move(box));
+        if (useRigidBodyTestEnvironment) {
+                buildRigidBodyTestEnvironment();
+        } else {
+                auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
+                for (auto& box : initialBoxes) {
+                        addRigidBodyBox(std::move(box));
+                }
         }
 }
 
@@ -579,6 +607,35 @@ void ofApp::performRigidBodyGameReset()
 void ofApp::resetRigidBodyGame()
 {
         rigidBodyResetRequested = true;
+}
+
+//--------------------------------------------------------------
+void ofApp::buildRigidBodyTestEnvironment()
+{
+        auto spawnBox = [&](const Vector3D& position, const Vector3D& halfExtents, float mass,
+                            const Vector3D& linearVel, const Vector3D& angularVel, const ofColor& color)
+        {
+                addRigidBodyBox(physicsWorld.createRigidBodyBox(position, halfExtents, mass, color, linearVel, angularVel));
+        };
+
+        // Collision frontale de deux caisses pour vérifier les impulsions et la symétrie.
+        spawnBox(Vector3D(-90.f, rigidBodyFloorY + 70.f, -60.f), Vector3D(16.f, 20.f, 16.f), 24.f,
+                 Vector3D(36.f, -5.f, 18.f), Vector3D(0.f, 0.8f, 0.f), ofColor(255, 180, 80));
+        spawnBox(Vector3D(90.f, rigidBodyFloorY + 70.f, -60.f), Vector3D(16.f, 20.f, 16.f), 24.f,
+                 Vector3D(-36.f, -5.f, 18.f), Vector3D(0.f, -0.8f, 0.f), ofColor(100, 210, 255));
+
+        // Pile de caisses statiques pour inspecter la stabilité verticale.
+        for (int i = 0; i < 3; ++i) {
+                float y = rigidBodyFloorY + 22.f + i * 44.f;
+                spawnBox(Vector3D(-40.f, y, 120.f), Vector3D(22.f, 22.f, 22.f), 32.f,
+                         Vector3D(0.f, 0.f, 0.f), Vector3D(0.f, 0.f, 0.f), ofColor(180, 140 + i * 20, 200));
+        }
+
+        // Collision en oblique avec rotation pour tester la friction et l'octree.
+        spawnBox(Vector3D(-120.f, rigidBodyFloorY + 120.f, 120.f), Vector3D(18.f, 14.f, 26.f), 26.f,
+                 Vector3D(48.f, -12.f, -28.f), Vector3D(0.f, 1.2f, 0.3f), ofColor(255, 140, 120));
+        spawnBox(Vector3D(40.f, rigidBodyFloorY + 120.f, 200.f), Vector3D(20.f, 16.f, 20.f), 28.f,
+                 Vector3D(-28.f, -8.f, -48.f), Vector3D(0.4f, -1.1f, 0.f), ofColor(120, 200, 255));
 }
 
 //--------------------------------------------------------------
@@ -633,19 +690,23 @@ void ofApp::updateRigidBodyGame(float dt)
         dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
         dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
 
-        physicsWorld.simulateRigidBodies(rigidBodies, dt);
+        bool shouldSimulate = !pauseRigidBodySimulation || stepRigidBodyOnce;
+        if (shouldSimulate) {
+                physicsWorld.simulateRigidBodies(rigidBodies, dt);
+                stepRigidBodyOnce = false;
 
-        for (auto& box : rigidBodies) {
-                if (box.reachedGoal || box.outOfBounds) {
-                        continue;
-                }
+                for (auto& box : rigidBodies) {
+                        if (box.reachedGoal || box.outOfBounds) {
+                                continue;
+                        }
 
-                handleRigidBodyGoal(box);
+                        handleRigidBodyGoal(box);
 
-                Vector3D position = box.body.getPosition();
-                if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
-                        box.outOfBounds = true;
-                        ++rigidBodyLost;
+                        Vector3D position = box.body.getPosition();
+                        if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
+                                box.outOfBounds = true;
+                                ++rigidBodyLost;
+                        }
                 }
         }
 }
