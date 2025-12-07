@@ -177,38 +177,12 @@ void World::addStaticPlane(const Vector3D& normal, float offset)
 }
 
 void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
-        // Mettre à jour les AABB et adapter dynamiquement les limites du monde
-        bool hasBodies = false;
-        Vector3D sceneMin(
-                std::numeric_limits<float>::max(),
-                std::numeric_limits<float>::max(),
-                std::numeric_limits<float>::max());
-        Vector3D sceneMax(
-                std::numeric_limits<float>::lowest(),
-                std::numeric_limits<float>::lowest(),
-                std::numeric_limits<float>::lowest());
-
+        // Mettre à jour les AABB avant la construction de l'octree
         for (auto & body_box : rigidBodies) {
                 body_box.body.calculateWorldAABB(*body_box.primitive);
-                const AABB& aabb = body_box.body.worldAABB;
-
-                sceneMin.x = std::min(sceneMin.x, aabb.min.x);
-                sceneMin.y = std::min(sceneMin.y, aabb.min.y);
-                sceneMin.z = std::min(sceneMin.z, aabb.min.z);
-
-                sceneMax.x = std::max(sceneMax.x, aabb.max.x);
-                sceneMax.y = std::max(sceneMax.y, aabb.max.y);
-                sceneMax.z = std::max(sceneMax.z, aabb.max.z);
-
-                hasBodies = true;
         }
 
-        if (hasBodies) {
-                const Vector3D padding(25.f, 25.f, 25.f);
-                m_worldBounds = AABB(sceneMin - padding, sceneMax + padding);
-        }
-
-        // Construire l'octree avec les limites mises à jour
+        // Construire l'octree avec les limites statiques du monde
         m_octree = std::make_unique<Octree>(m_worldBounds);
 
         // MAJ AABB et insert dans le octree
