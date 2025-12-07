@@ -324,7 +324,7 @@ void SystemeCollisionDetection::DetectBoxBox(Box* boxA, Box* boxB)
     const float radiusA = boxA->HalfExtent.GetNorm();
     const float radiusB = boxB->HalfExtent.GetNorm();
 
-    const Vector3D diff = centerB - centerA;
+    Vector3D diff = centerB - centerA;
     const float distance = diff.GetNorm();
     const float combinedRadius = radiusA + radiusB;
 
