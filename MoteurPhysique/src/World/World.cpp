@@ -189,8 +189,6 @@ m_octree->insert(body_box->primitive.get(), body_box->body.worldAABB);
 
 
 // À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
-narrowPhaseDetection(potentialCollisions);
-
 lastPotentialPairs = potentialCollisions;
 }
 
@@ -265,7 +263,13 @@ bodybox->body.integrer(deltaTime);
 }
 
 broadPhaseDetection();
-// TODO : phase restreinte et resolution
+narrowPhaseDetection(lastPotentialPairs);
+
+if (collisionSystem)
+{
+    collisionSystem->resolveAll();
+    collisionSystem->clear();
+}
 
 for (auto& bodybox : m_rigidBodies) {
 bodybox->body.clearAccumulators();
@@ -297,6 +301,8 @@ void World::simulateRigidBodies(std::vector<RigidBodyBox>& bodies, float deltaTi
     }
 
     broadPhaseDetection();
+
+    narrowPhaseDetection(lastPotentialPairs);
 
     lastContacts = collisionSystem ? collisionSystem->detectedCollisions : std::vector<Contact>();
     if (collisionSystem)
