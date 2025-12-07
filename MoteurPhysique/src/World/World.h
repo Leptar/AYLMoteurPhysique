@@ -7,7 +7,6 @@
 #include "../particule.h"
 #include "../ForceGenerator/ParticuleForceRegistry.h"
 #include "../ForceGenerator/RigidBodyForceRegistry.h"
-#include "../SystemeCollision/SystemCollisionDetection.h"
 #include "RigidBodyBox.h"
 #include "SystemeCollisionDetection.h"
 
@@ -44,11 +43,6 @@ public:
      */
     void applyRigidBodyForces(CorpsRigide& body, float deltaTime) const;
 
-    /**
-     * @brief Donne accès au système de détection pour y ajouter
-     * des contraintes (tiges, câbles, plans).
-     */
-    SystemCollisionDetection* getCollisionDetector();
 
     /**
      * @brief Crée et configure un pavé rigide prêt à être simulé.
@@ -59,6 +53,13 @@ public:
                                     const ofColor& color,
                                     const Vector3D& initialLinearVelocity = Vector3D(),
                                     const Vector3D& initialAngularVelocity = Vector3D()) const;
+
+    /**
+     * @brief Crée une boîte statique utilisée comme plateforme de collision.
+     */
+    RigidBodyBox createStaticPlatformBox(const Vector3D& position,
+                                         const Vector3D& halfExtents,
+                                         const ofColor& color) const;
 
     /**
      * @brief Génère une collection de pavés rigides aléatoires pour initialiser la scène du jeu.
@@ -74,7 +75,6 @@ private:
 
     ParticuleForceRegistry m_forceRegistry;
     RigidBodyForceRegistry m_rigidBodyForceRegistry;
-    SystemCollisionDetection m_collisionDetector;
 
 	// Systeme de collision
 	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
