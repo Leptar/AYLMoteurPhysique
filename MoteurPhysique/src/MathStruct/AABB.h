@@ -28,4 +28,9 @@ struct AABB
                min.y <= other.max.y && max.y >= other.min.y &&
                min.z <= other.max.z && max.z >= other.min.z;
     }
+
+    Vector3D getSize() const
+    {
+        return max - min;
+    }
 };

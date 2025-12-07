@@ -236,6 +236,7 @@ void ofApp::drawHud() const
                 stream << "Points : " << rigidBodyScore << "\n";
                 stream << "Perdues : " << rigidBodyLost << "\n";
                 stream << (applyGravityRigidBodies ? "[x]" : "[ ]") << " Gravité (G)\n";
+                stream << (drawOctree ? "[x]" : "[ ]") << " Afficher Octree (O)\n";
                 stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
@@ -368,6 +369,12 @@ void ofApp::keyPressed(int key){
         if (key == 'c' || key == 'C') {
                 if (activeScene == SceneType::Phase2Blob) {
                         highlightCollisions = !highlightCollisions;
+                }
+        }
+
+        if (key == 'o' || key == 'O') {
+                if (activeScene == SceneType::Phase3Game) {
+                        drawOctree = !drawOctree;
                 }
         }
 
@@ -536,7 +543,7 @@ void ofApp::performRigidBodyGameReset()
 
         goalCenter.y = rigidBodyFloorY;
 
-        auto initialBoxes = physicsWorld.createRigidBodyGame(30, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
+        auto initialBoxes = physicsWorld.createRigidBodyGame(100, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
         for (auto& box : initialBoxes) {
                 addRigidBodyBox(std::move(box));
         }
@@ -594,30 +601,8 @@ void ofApp::updateRigidBodyGame(float dt)
                 return;
         }
 
-        float moveX = ((moveDropperRight ? 1.f : 0.f) - (moveDropperLeft ? 1.f : 0.f)) * dropperSpeed * dt;
-        float moveZ = ((moveDropperBackward ? 1.f : 0.f) - (moveDropperForward ? 1.f : 0.f)) * dropperSpeed * dt;
+        physicsWorld.update(dt, rigidBodies);
 
-        dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
-        dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
-
-        for (auto& box : rigidBodies) {
-                if (box.reachedGoal || box.outOfBounds) {
-                        continue;
-                }
-
-                physicsWorld.applyRigidBodyForces(box.body, dt);
-
-                box.body.integrer(dt);
-
-                applyRigidBodyBounds(box);
-                handleRigidBodyGoal(box);
-
-                Vector3D position = box.body.getPosition();
-                if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
-                        box.outOfBounds = true;
-                        ++rigidBodyLost;
-                }
-        }
 }
 
 //--------------------------------------------------------------
@@ -763,6 +748,10 @@ void ofApp::drawRigidBodyGame()
                 }
                 ofPopStyle();
                 ofPopMatrix();
+        }
+
+        if (drawOctree) {
+                physicsWorld.drawOctree();
         }
 
         rigidBodyCamera.end();

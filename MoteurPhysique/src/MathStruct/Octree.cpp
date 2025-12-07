@@ -1,5 +1,7 @@
 #include "Octree.h"
 
+#include "of3dGraphics.h"
+
 Octree::Octree(const AABB& newBounds) : Area(newBounds)
 {
 }
@@ -13,46 +15,46 @@ void Octree::subdivide()
     // zyx
     children[0] = std::make_unique<Octree>(
         AABB(min, center)
-        );
+    );
     children[1] = std::make_unique<Octree>(
         AABB(
-            Vector3D(center.x, min.y,    min.z),
-            Vector3D(max.x,    center.y, center.z)
-            )
-        );
+            Vector3D(center.x, min.y, min.z),
+            Vector3D(max.x, center.y, center.z)
+        )
+    );
     children[2] = std::make_unique<Octree>(
         AABB(
-            Vector3D(min.x,    center.y, min.z),
-            Vector3D(center.x, max.y,    center.z)
-            )
-        );
+            Vector3D(min.x, center.y, min.z),
+            Vector3D(center.x, max.y, center.z)
+        )
+    );
     children[3] = std::make_unique<Octree>(
         AABB(
             Vector3D(center.x, center.y, min.z),
-            Vector3D(max.x,    max.y,    center.z)
-            )
-        );
+            Vector3D(max.x, max.y, center.z)
+        )
+    );
     children[4] = std::make_unique<Octree>(
         AABB(
-            Vector3D(min.x,    min.y,    center.z),
+            Vector3D(min.x, min.y, center.z),
             Vector3D(center.x, center.y, max.z)
-            )
-        );
+        )
+    );
     children[5] = std::make_unique<Octree>(
         AABB(
-            Vector3D(center.x, min.y,    center.z),
-            Vector3D(max.x,    center.y, max.z)
-            )
-        );
+            Vector3D(center.x, min.y, center.z),
+            Vector3D(max.x, center.y, max.z)
+        )
+    );
     children[6] = std::make_unique<Octree>(
         AABB(
-            Vector3D(min.x,    center.y, center.z),
-            Vector3D(center.x, max.y,    max.z)
-            )
-        );
+            Vector3D(min.x, center.y, center.z),
+            Vector3D(center.x, max.y, max.z)
+        )
+    );
     children[7] = std::make_unique<Octree>(
         AABB(center, max)
-        );
+    );
 
     bHasBeenSubdivide = true;
 }
@@ -69,14 +71,13 @@ bool Octree::insert(Primitive* object, const AABB& objectBounds)
     if (bHasBeenSubdivide)
     {
         // Tente d'inserer dans un enfant si l'objet est entièrement contenu dedans.
-        if (children[0]->containsEntiraly(objectBounds)) return children[0]->insert(object, objectBounds);
-        if (children[1]->containsEntiraly(objectBounds)) return children[1]->insert(object, objectBounds);
-        if (children[2]->containsEntiraly(objectBounds)) return children[2]->insert(object, objectBounds);
-        if (children[3]->containsEntiraly(objectBounds)) return children[3]->insert(object, objectBounds);
-        if (children[4]->containsEntiraly(objectBounds)) return children[4]->insert(object, objectBounds);
-        if (children[5]->containsEntiraly(objectBounds)) return children[5]->insert(object, objectBounds);
-        if (children[6]->containsEntiraly(objectBounds)) return children[6]->insert(object, objectBounds);
-        if (children[7]->containsEntiraly(objectBounds)) return children[7]->insert(object, objectBounds);
+        for (auto& child : children)
+        {
+            if (child->containsEntiraly(objectBounds))
+            {
+                return child->insert(object, objectBounds);
+            }
+        }
     }
 
     // Si on arrive ici, soit le noeud est une feuille, soit l'objet chevauche les frontieres des enfants.
@@ -88,29 +89,29 @@ bool Octree::insert(Primitive* object, const AABB& objectBounds)
     {
         subdivide();
 
-        // On essaie de redistribuer les objets de ce noeud vers les enfants.
-        std::vector<Primitive*> RemainingObjects;
-        for (Primitive* obj : Objets)
-        {
-            bool bPushedToChild = false;
+        std::vector<Primitive*> remainingObjects;
+        remainingObjects.reserve(Objets.size());
+
+        // On redistribue les objets qui peuvent maintenant aller dans les enfants.
+        for (Primitive* obj : Objets) {
+            bool movedToChild = false;
             const AABB& objBounds = obj->corpsRigide->worldAABB;
+            for (auto& child : children) {
+                if (child->containsEntiraly(objBounds)) {
+                    child->insert(obj, objBounds);
+                    movedToChild = true;
+                    break; // L'objet a été déplacé, on passe au suivant.
+                }
+            }
 
-            if (children[0]->containsEntiraly(objBounds)) { children[0]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[1]->containsEntiraly(objBounds)) { children[1]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[2]->containsEntiraly(objBounds)) { children[2]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[3]->containsEntiraly(objBounds)) { children[3]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[4]->containsEntiraly(objBounds)) { children[4]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[5]->containsEntiraly(objBounds)) { children[5]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[6]->containsEntiraly(objBounds)) { children[6]->insert(obj, objBounds); bPushedToChild = true; }
-            else if (children[7]->containsEntiraly(objBounds)) { children[7]->insert(obj, objBounds); bPushedToChild = true; }
-
-            // Si l'objet n'a pas pu être pousse, il reste dans le noeud parent.
-            if (!bPushedToChild)
-            {
-                RemainingObjects.push_back(obj);
+            // Si l'objet n'a pas pu être déplacé, il reste dans ce noeud.
+            if (!movedToChild) {
+                remainingObjects.push_back(obj);
             }
         }
-        Objets = RemainingObjects;
+
+        // Met à jour la liste des objets du noeud courant.
+        Objets = remainingObjects;
     }
     return true;
 }
@@ -158,4 +159,83 @@ std::vector<Primitive*> Octree::request(const AABB& otherBounds)
 bool Octree::containsEntiraly(const AABB& other) const
 {
     return Area.contains(other);
+}
+
+void Octree::generatePairsForNode(std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions)
+{
+    // Génère des paires pour les objets à l'intérieur de ce noeud.
+    for (size_t i = 0; i < Objets.size(); ++i)
+    {
+        for (size_t j = i + 1; j < Objets.size(); ++j)
+        {
+            Primitive* p1 = Objets[i];
+            Primitive* p2 = Objets[j];
+            // Assure un ordre constant pour éviter les doublons (A,B) vs (B,A)
+            if (p1 < p2)
+            {
+                potentialCollisions.emplace_back(p1, p2);
+            }
+            else
+            {
+                potentialCollisions.emplace_back(p2, p1);
+            }
+        }
+    }
+}
+
+void Octree::generatePotentialCollisions(std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions)
+{
+    // 1. Générer les paires pour les objets contenus dans ce noeud
+    generatePairsForNode(potentialCollisions);
+
+    // 2. Si le noeud est subdivisé, générer les paires entre les objets de ce noeud
+    //    et les objets des noeuds enfants.
+    if (bHasBeenSubdivide)
+    {
+        std::vector<Primitive*> childObjects;
+        for (auto& child : children)
+        {
+            childObjects.clear();
+            childObjects = child->request(child->Area); // Récupère tous les objets du sous-arbre
+            for (Primitive* parentObj : Objets)
+            {
+                for (Primitive* childObj : childObjects)
+                {
+                    if (parentObj < childObj)
+                    {
+                        potentialCollisions.emplace_back(parentObj, childObj);
+                    }
+                    else
+                    {
+                        potentialCollisions.emplace_back(childObj, parentObj);
+                    }
+                }
+            }
+        }
+        // 3. Appel récursif sur les enfants
+        for (auto& child : children) child->generatePotentialCollisions(potentialCollisions);
+    }
+}
+
+void Octree::draw() const
+{
+    ofPushStyle();
+    ofNoFill(); // On veut voir à travers les boîtes
+    ofSetColor(ofColor::cyan);
+
+    Vector3D center = Area.getCenter();
+    Vector3D size = Area.getSize();
+
+    // Dessine la boîte représentant ce noeud de l'Octree
+    ofDrawBox(center.x, center.y, center.z, size.x, size.y, size.z);
+
+    // Si le noeud est subdivisé, on appelle récursivement le dessin sur les enfants
+    if (bHasBeenSubdivide)
+    {
+        for (const auto& child : children)
+        {
+            if (child) child->draw();
+        }
+    }
+    ofPopStyle();
 }

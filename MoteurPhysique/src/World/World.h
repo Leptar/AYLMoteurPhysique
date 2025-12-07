@@ -21,7 +21,7 @@ public:
      * @brief
      * Appelle tous les systèmes dans l'ordre (Forces, Intégration, Collisions) pour l'exécuter à chaque frame.
      */
-    void update(float deltaTime);
+    void update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies);
 
     /**
      * @brief Ajoute une particule à la simulation.
@@ -68,6 +68,7 @@ public:
                                                   float boundsX,
                                                   float boundsZ) const;
 
+	void drawOctree() const;
 private:
     std::vector<Particule*> m_particules;
 
@@ -78,9 +79,6 @@ private:
 	// Systeme de collision
 	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
 	
-	// Le monde possède les corps rigides
-	std::vector<RigidBodyBox*> m_rigidBodies;
-
 	// L'Octree, reconstruit à chaque frame
 	std::unique_ptr<Octree> m_octree;
 
@@ -88,6 +86,8 @@ private:
 	AABB m_worldBounds;
 
 	// Méthodes privées pour la détection de collision
-	void broadPhaseDetection();
+	void broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies);
 	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
+
+    
 };
