@@ -164,8 +164,13 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
 }
 
 void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
-	// Construire l'octree
-	m_octree = std::make_unique<Octree>(m_worldBounds);
+        if (!collisionSystem)
+        {
+                return;
+        }
+
+        // Construire l'octree
+        m_octree = std::make_unique<Octree>(m_worldBounds);
 
 	// MAJ AABB et insert dans le octree
 	for (auto & body_box : rigidBodies) {
@@ -256,11 +261,15 @@ void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
 		bodybox.body.integrer(deltaTime);
 	}
 
-	broadPhaseDetection(rigidBodies);
-	collisionSystem->resolveAll();
+        broadPhaseDetection(rigidBodies);
 
-	for (auto& bodybox : rigidBodies) {
-		bodybox.body.clearAccumulators();
+        if (collisionSystem)
+        {
+                collisionSystem->resolveAll();
+        }
+
+        for (auto& bodybox : rigidBodies) {
+                bodybox.body.clearAccumulators();
 	}
 
 }
