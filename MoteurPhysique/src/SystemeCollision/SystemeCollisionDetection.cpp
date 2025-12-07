@@ -320,24 +320,49 @@ void SystemeCollisionDetection::DetectBoxBox(Box* boxA, Box* boxB)
         return;
     }
 
-    Vector3D posA = boxA->corpsRigide->getPosition();
-    Vector3D posB = boxB->corpsRigide->getPosition();
+    const AABB& boundsA = boxA->corpsRigide->worldAABB;
+    const AABB& boundsB = boxB->corpsRigide->worldAABB;
 
-    float radiusA = boxA->HalfExtent.GetNorm();
-    float radiusB = boxB->HalfExtent.GetNorm();
+    float overlapX = std::min(boundsA.max.x, boundsB.max.x) - std::max(boundsA.min.x, boundsB.min.x);
+    float overlapY = std::min(boundsA.max.y, boundsB.max.y) - std::max(boundsA.min.y, boundsB.min.y);
+    float overlapZ = std::min(boundsA.max.z, boundsB.max.z) - std::max(boundsA.min.z, boundsB.min.z);
 
-    Vector3D delta = posB - posA;
-    float distance = delta.GetNorm();
-    float combinedRadius = radiusA + radiusB;
-
-    if (distance <= 1e-4f || distance > combinedRadius)
+    if (overlapX <= 0.f || overlapY <= 0.f || overlapZ <= 0.f)
     {
-        return;
+        return; // Aucun recouvrement AABB : pas de collision.
     }
 
-    Vector3D normal = delta.scalar(1.f / distance);
-    float penetration = combinedRadius - distance;
-    Vector3D contactPoint = posA + normal.scalar(radiusA - penetration * 0.5f);
+    // Axe de séparation le plus faible : normale et pénétration.
+    float penetration = overlapX;
+    Vector3D normal(1.f, 0.f, 0.f);
+
+    if (overlapY < penetration)
+    {
+        penetration = overlapY;
+        normal = Vector3D(0.f, 1.f, 0.f);
+    }
+    if (overlapZ < penetration)
+    {
+        penetration = overlapZ;
+        normal = Vector3D(0.f, 0.f, 1.f);
+    }
+
+    Vector3D centerA = boundsA.getCenter();
+    Vector3D centerB = boundsB.getCenter();
+
+    // Orienter la normale de A vers B.
+    if ((normal.x != 0.f && centerB.x < centerA.x) ||
+        (normal.y != 0.f && centerB.y < centerA.y) ||
+        (normal.z != 0.f && centerB.z < centerA.z))
+    {
+        normal = normal.scalar(-1.f);
+    }
+
+    // Point de contact approximé au centre de la zone de recouvrement.
+    Vector3D contactPoint(
+        std::max(boundsA.min.x, boundsB.min.x) + overlapX * 0.5f,
+        std::max(boundsA.min.y, boundsB.min.y) + overlapY * 0.5f,
+        std::max(boundsA.min.z, boundsB.min.z) + overlapZ * 0.5f);
 
     add(boxA, boxB, contactPoint, normal, penetration, 0.45f, collision_type::Contact);
 }
