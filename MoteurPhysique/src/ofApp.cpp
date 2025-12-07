@@ -554,11 +554,19 @@ void ofApp::performRigidBodyGameReset()
         const float wallThickness = 12.f;
         const Vector3D wallHalfExtents(rigidBodyBoundsX, wallHeight * 0.5f, wallThickness * 0.5f);
 
-        RigidBodyBox floor = physicsWorld.createStaticPlatformBox(
-                Vector3D(0.f, rigidBodyFloorY - floorThickness, 0.f),
-                Vector3D(rigidBodyBoundsX, floorThickness, rigidBodyBoundsZ),
-                ofColor(32, 36, 54));
-        addRigidBodyBox(std::move(floor));
+    RigidBodyBox floor = physicsWorld.createStaticPlatformBox(
+            Vector3D(0.f, rigidBodyFloorY - floorThickness, 0.f),
+            Vector3D(rigidBodyBoundsX, floorThickness, rigidBodyBoundsZ),
+            ofColor(32, 36, 54));
+    addRigidBodyBox(std::move(floor));
+
+    // Plateforme rigide dédiée au socle de la boîte d'objectif : collisions visibles à l'endroit où elle est dessinée.
+    const float goalPlatformThickness = 6.f;
+    RigidBodyBox goalPlatform = physicsWorld.createStaticPlatformBox(
+            Vector3D(goalCenter.x, rigidBodyFloorY + goalPlatformThickness, goalCenter.z),
+            Vector3D(goalSize * 0.5f, goalPlatformThickness, goalSize * 0.5f),
+            ofColor(56, 82, 126, 240));
+    addRigidBodyBox(std::move(goalPlatform));
 
         RigidBodyBox northWall = physicsWorld.createStaticPlatformBox(
                 Vector3D(0.f, rigidBodyFloorY + wallHalfExtents.y, rigidBodyBoundsZ + wallThickness * 0.5f),
