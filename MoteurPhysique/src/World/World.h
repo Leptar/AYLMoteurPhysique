@@ -68,6 +68,19 @@ public:
                                                   float boundsX,
                                                   float boundsZ) const;
 
+    /**
+     * @brief Simule une collection de boîtes rigides, reconstruit l'octree et résout les contacts.
+     * @param bodies        Liste des pavés actifs (propriétés physiques déjà configurées).
+     * @param deltaTime     Pas de temps en secondes.
+     * @param worldBounds   Volume englobant à utiliser pour la racine de l'octree et les plans statiques.
+     */
+    void stepRigidBodies(std::vector<RigidBodyBox>& bodies, float deltaTime, const AABB& worldBounds);
+
+    /**
+     * @brief Met à disposition l'octree courant pour l'affichage/debug.
+     */
+    const std::unique_ptr<Octree>& getOctree() const { return m_octree; }
+
 private:
     std::vector<Particule*> m_particules;
 
@@ -84,10 +97,17 @@ private:
 	// L'Octree, reconstruit à chaque frame
 	std::unique_ptr<Octree> m_octree;
 
-	// Les limites de l'espace de simulation
-	AABB m_worldBounds;
+        // Les limites de l'espace de simulation
+        AABB m_worldBounds;
 
-	// Méthodes privées pour la détection de collision
-	void broadPhaseDetection();
-	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
+        // Plans statiques alignés sur la boîte englobante (sol, plafond et murs)
+        std::vector<std::unique_ptr<Plane>> m_boundaryPlanes;
+        std::vector<std::unique_ptr<CorpsRigide>> m_boundaryBodies;
+
+        // Méthodes privées pour la détection de collision
+        void broadPhaseDetection();
+        void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
+
+        // Crée ou met à jour les plans statiques en fonction des limites passées.
+        void buildBoundaryPlanes();
 };

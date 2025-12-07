@@ -631,20 +631,21 @@ void ofApp::updateRigidBodyGame(float dt)
         dropperX = ofClamp(dropperX + moveX, -rigidBodyBoundsX + 20.f, rigidBodyBoundsX - 20.f);
         dropperZ = ofClamp(dropperZ + moveZ, -rigidBodyBoundsZ + 20.f, rigidBodyBoundsZ - 20.f);
 
+        AABB gameBounds(
+                Vector3D(-rigidBodyBoundsX, rigidBodyFloorY - 60.f, -rigidBodyBoundsZ),
+                Vector3D(rigidBodyBoundsX, rigidBodyFloorY + 480.f, rigidBodyBoundsZ));
+
+        physicsWorld.stepRigidBodies(rigidBodies, dt, gameBounds);
+
         for (auto& box : rigidBodies) {
                 if (box.reachedGoal || box.outOfBounds) {
                         continue;
                 }
 
-                physicsWorld.applyRigidBodyForces(box.body, dt);
-
-                box.body.integrer(dt);
-
-                applyRigidBodyBounds(box);
                 handleRigidBodyGoal(box);
 
                 Vector3D position = box.body.getPosition();
-                if (!box.reachedGoal && position.y < rigidBodyFloorY - 420.f) {
+                if (!box.reachedGoal && (position.y < gameBounds.min.y - 200.f)) {
                         box.outOfBounds = true;
                         ++rigidBodyLost;
                 }
@@ -869,7 +870,7 @@ void ofApp::setupOctreeDemo()
                 octreeBodies.push_back(std::move(box));
         }
 
-        rebuildOctreeDebug();
+    rebuildOctreeDebug();
 }
 
 //--------------------------------------------------------------
@@ -879,17 +880,11 @@ void ofApp::updateOctreeDemo(float dt)
                 return;
         }
 
+        physicsWorld.stepRigidBodies(octreeBodies, dt, octreeBounds);
+
         for (auto& box : octreeBodies) {
-                if (box.outOfBounds) {
-                        continue;
-                }
-
-                physicsWorld.applyRigidBodyForces(box.body, dt);
-                box.body.integrer(dt);
-                applyRigidBodyBounds(box);
-
                 Vector3D position = box.body.getPosition();
-                if (position.y < rigidBodyFloorY - 420.f) {
+                if (position.y < octreeBounds.min.y - 160.f) {
                         box.outOfBounds = true;
                 }
         }
@@ -953,18 +948,7 @@ void ofApp::drawOctreeDemo()
 //--------------------------------------------------------------
 void ofApp::rebuildOctreeDebug()
 {
-        // Réduire le nombre d'objets par nœud pour forcer des subdivisions visibles
-        debugOctree = std::make_unique<Octree>(octreeBounds, 2);
-
-        for (auto& box : octreeBodies) {
-                if (!box.primitive) {
-                        continue;
-                }
-                box.primitive->corpsRigide = &box.body;
-                box.body.calculateWorldAABB(*box.primitive);
-                debugOctree->insert(box.primitive, box.body.worldAABB);
-        }
-
+        debugOctree = physicsWorld.getOctree().get();
         octreeNodeCount = debugOctree ? countOctreeNodes(*debugOctree) : 0;
 }
 

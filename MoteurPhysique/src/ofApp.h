@@ -122,7 +122,7 @@ class ofApp : public ofBaseApp{
 
                 // Phase 4 - Octree
                 std::vector<RigidBodyBox> octreeBodies;
-                std::unique_ptr<Octree> debugOctree;
+                const Octree* debugOctree = nullptr; // Vue sur l'octree construit par World
                 AABB octreeBounds;
                 int octreeNodeCount = 0;
 
