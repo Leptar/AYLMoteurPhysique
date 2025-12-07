@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <memory>
 #include <vector>
 
 #include "AABB.h"
@@ -9,7 +10,7 @@
 class Octree
 {
 public:
-    Octree(const AABB& NewArea);
+    Octree(const AABB& NewArea, int maxObjectsPerNode = 8);
 
     void subdivide();
 

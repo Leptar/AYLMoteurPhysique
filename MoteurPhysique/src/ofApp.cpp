@@ -953,7 +953,8 @@ void ofApp::drawOctreeDemo()
 //--------------------------------------------------------------
 void ofApp::rebuildOctreeDebug()
 {
-        debugOctree = std::make_unique<Octree>(octreeBounds);
+        // Réduire le nombre d'objets par nœud pour forcer des subdivisions visibles
+        debugOctree = std::make_unique<Octree>(octreeBounds, 2);
 
         for (auto& box : octreeBodies) {
                 if (!box.primitive) {

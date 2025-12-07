@@ -1,7 +1,10 @@
 #include "Octree.h"
 
-Octree::Octree(const AABB& newBounds) : Area(newBounds)
+#include <algorithm>
+
+Octree::Octree(const AABB& newBounds, int maxObjectsPerNode) : Area(newBounds)
 {
+    MAX_SUBDIVIDE = std::max(1, maxObjectsPerNode);
 }
 
 void Octree::subdivide()
@@ -12,46 +15,60 @@ void Octree::subdivide()
 
     // zyx
     children[0] = std::make_unique<Octree>(
-        AABB(min, center)
+        AABB(min, center),
+        MAX_SUBDIVIDE
         );
     children[1] = std::make_unique<Octree>(
         AABB(
             Vector3D(center.x, min.y,    min.z),
             Vector3D(max.x,    center.y, center.z)
             )
+        ,
+        MAX_SUBDIVIDE
         );
     children[2] = std::make_unique<Octree>(
         AABB(
             Vector3D(min.x,    center.y, min.z),
             Vector3D(center.x, max.y,    center.z)
             )
+        ,
+        MAX_SUBDIVIDE
         );
     children[3] = std::make_unique<Octree>(
         AABB(
             Vector3D(center.x, center.y, min.z),
             Vector3D(max.x,    max.y,    center.z)
             )
+        ,
+        MAX_SUBDIVIDE
         );
     children[4] = std::make_unique<Octree>(
         AABB(
             Vector3D(min.x,    min.y,    center.z),
             Vector3D(center.x, center.y, max.z)
             )
+        ,
+        MAX_SUBDIVIDE
         );
     children[5] = std::make_unique<Octree>(
         AABB(
             Vector3D(center.x, min.y,    center.z),
             Vector3D(max.x,    center.y, max.z)
             )
+        ,
+        MAX_SUBDIVIDE
         );
     children[6] = std::make_unique<Octree>(
         AABB(
             Vector3D(min.x,    center.y, center.z),
             Vector3D(center.x, max.y,    max.z)
             )
+        ,
+        MAX_SUBDIVIDE
         );
     children[7] = std::make_unique<Octree>(
-        AABB(center, max)
+        AABB(center, max),
+        MAX_SUBDIVIDE
         );
 
     bHasBeenSubdivide = true;
