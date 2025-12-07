@@ -237,6 +237,7 @@ void ofApp::drawHud() const
                 stream << "Perdues : " << rigidBodyLost << "\n";
                 stream << (applyGravityRigidBodies ? "[x]" : "[ ]") << " Gravité (G)\n";
                 stream << (drawOctree ? "[x]" : "[ ]") << " Afficher Octree (O)\n";
+                stream << (drawCollisionContacts ? "[x]" : "[ ]") << " Contacts de collision (C)\n";
                 stream << (drawRigidBodyWireframe ? "[x]" : "[ ]") << " Mode filaire (X)\n";
                 stream << "Déplacer le distributeur : Flèches ou ZQSD\n";
                 stream << "Lancer une caisse : Espace\n";
@@ -369,6 +370,8 @@ void ofApp::keyPressed(int key){
         if (key == 'c' || key == 'C') {
                 if (activeScene == SceneType::Phase2Blob) {
                         highlightCollisions = !highlightCollisions;
+                } else if (activeScene == SceneType::Phase3Game) {
+                        drawCollisionContacts = !drawCollisionContacts;
                 }
         }
 
@@ -523,7 +526,9 @@ void ofApp::setupRigidBodyGame()
 void ofApp::addRigidBodyBox(RigidBodyBox&& box)
 {
         rigidBodies.push_back(std::move(box));
-        ++totalRigidBodySpawned;
+        if (!rigidBodies.back().isStaticPlatform) {
+                ++totalRigidBodySpawned;
+        }
 }
 
 //--------------------------------------------------------------
@@ -605,84 +610,6 @@ void ofApp::updateRigidBodyGame(float dt)
 
 }
 
-//--------------------------------------------------------------
-void ofApp::applyRigidBodyBounds(RigidBodyBox& box)
-{
-        Vector3D position = box.body.getPosition();
-        Vector3D velocity = box.body.getVelocite();
-        Vector3D angular = box.body.getVelociteAngulaire();
-
-        float radius = box.boundingRadius;
-        bool touchedFloor = false;
-
-        if (position.y - radius < rigidBodyFloorY) {
-                position.y = rigidBodyFloorY + radius;
-                if (velocity.y < 0.f) {
-                        velocity.y = -velocity.y * rigidBodyBounce;
-                }
-                touchedFloor = true;
-        }
-
-        if (position.x - radius < -rigidBodyBoundsX) {
-                position.x = -rigidBodyBoundsX + radius;
-                if (velocity.x < 0.f) {
-                        velocity.x = -velocity.x * rigidBodyBounce;
-                }
-        } else if (position.x + radius > rigidBodyBoundsX) {
-                position.x = rigidBodyBoundsX - radius;
-                if (velocity.x > 0.f) {
-                        velocity.x = -velocity.x * rigidBodyBounce;
-                }
-        }
-
-        if (position.z - radius < -rigidBodyBoundsZ) {
-                position.z = -rigidBodyBoundsZ + radius;
-                if (velocity.z < 0.f) {
-                        velocity.z = -velocity.z * rigidBodyBounce;
-                }
-        } else if (position.z + radius > rigidBodyBoundsZ) {
-                position.z = rigidBodyBoundsZ - radius;
-                if (velocity.z > 0.f) {
-                        velocity.z = -velocity.z * rigidBodyBounce;
-                }
-        }
-
-        if (touchedFloor) {
-                velocity.x *= rigidBodyFloorFriction;
-                velocity.z *= rigidBodyFloorFriction;
-                angular = angular.scalar(rigidBodyFloorFriction);
-
-                if (std::abs(velocity.x) < 1e-2f) velocity.x = 0.f;
-                if (std::abs(velocity.y) < 1e-2f) velocity.y = 0.f;
-                if (std::abs(velocity.z) < 1e-2f) velocity.z = 0.f;
-        }
-
-        box.body.setPosition(position);
-        box.body.setVelocite(velocity);
-        box.body.setVelociteAngulaire(angular);
-}
-
-//--------------------------------------------------------------
-void ofApp::handleRigidBodyGoal(RigidBodyBox& box)
-{
-        if (box.reachedGoal || box.outOfBounds) {
-                return;
-        }
-
-        float halfGoal = goalSize * 0.5f;
-        Vector3D position = box.body.getPosition();
-        if (std::abs(position.x - goalCenter.x) <= halfGoal &&
-            std::abs(position.z - goalCenter.z) <= halfGoal &&
-            position.y - box.boundingRadius <= rigidBodyFloorY + 2.f) {
-                box.reachedGoal = true;
-                ++rigidBodyScore;
-
-                position.y = rigidBodyFloorY + box.boundingRadius;
-                box.body.setPosition(position);
-                box.body.setVelocite(Vector3D(0.f, 0.f, 0.f));
-                box.body.setVelociteAngulaire(Vector3D(0.f, 0.f, 0.f));
-        }
-}
 
 //--------------------------------------------------------------
 void ofApp::drawRigidBodyGame()
@@ -690,21 +617,33 @@ void ofApp::drawRigidBodyGame()
         ofEnableDepthTest();
         rigidBodyCamera.begin();
 
-        ofPushStyle();
-        ofSetColor(28, 32, 52);
-        ofDrawBox(0.f, rigidBodyFloorY - 6.f, 0.f, rigidBodyBoundsX * 2.f + 80.f, 12.f, rigidBodyBoundsZ * 2.f + 80.f);
-        ofPopStyle();
+        auto drawRigidBoxInstance = [&](const RigidBodyBox& box)
+        {
+                ofPushMatrix();
+                ofMatrix4x4 transform = buildTransformMatrix(box.body.getOrientation(), box.body.getPosition());
+                ofMultMatrix(transform);
 
-        float wallHeight = 220.f;
-        float wallThickness = 10.f;
+                ofPushStyle();
+                ofColor drawColor = box.color;
+                if (!box.isStaticPlatform) {
+                        if (box.reachedGoal) {
+                                drawColor = box.color.getLerped(ofColor::white, 0.4f);
+                        } else if (box.outOfBounds) {
+                                drawColor = ofColor(80, 80, 80, 140);
+                        }
+                }
+                ofSetColor(drawColor);
 
-        ofPushStyle();
-        ofSetColor(48, 58, 92, 220);
-        ofDrawBox(0.f, rigidBodyFloorY + wallHeight * 0.5f, rigidBodyBoundsZ + wallThickness * 0.5f, rigidBodyBoundsX * 2.f, wallHeight, wallThickness);
-        ofDrawBox(0.f, rigidBodyFloorY + wallHeight * 0.5f, -rigidBodyBoundsZ - wallThickness * 0.5f, rigidBodyBoundsX * 2.f, wallHeight, wallThickness);
-        ofDrawBox(rigidBodyBoundsX + wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f, wallThickness, wallHeight, rigidBodyBoundsZ * 2.f);
-        ofDrawBox(-rigidBodyBoundsX - wallThickness * 0.5f, rigidBodyFloorY + wallHeight * 0.5f, 0.f, wallThickness, wallHeight, rigidBodyBoundsZ * 2.f);
-        ofPopStyle();
+                if (drawRigidBodyWireframe) {
+                        ofNoFill();
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                        ofFill();
+                } else {
+                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+                }
+                ofPopStyle();
+                ofPopMatrix();
+        };
 
         ofPushStyle();
         ofSetColor(100, 200, 160, 200);
@@ -724,30 +663,29 @@ void ofApp::drawRigidBodyGame()
         ofDrawBox(0.f, 0.f, 0.f, 36.f, 12.f, 36.f);
         ofPopStyle();
         ofPopMatrix();
+        
 
         for (const auto& box : rigidBodies) {
-                ofPushMatrix();
-                ofMatrix4x4 transform = buildTransformMatrix(box.body.getOrientation(), box.body.getPosition());
-                ofMultMatrix(transform);
-
-                ofPushStyle();
-                ofColor drawColor = box.color;
-                if (box.reachedGoal) {
-                        drawColor = box.color.getLerped(ofColor::white, 0.4f);
-                } else if (box.outOfBounds) {
-                        drawColor = ofColor(80, 80, 80, 140);
+                if (!box.isStaticPlatform) {
+                        drawRigidBoxInstance(box);
                 }
-                ofSetColor(drawColor);
+        }
 
-                if (drawRigidBodyWireframe) {
-                        ofNoFill();
-                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
-                        ofFill();
-                } else {
-                        ofDrawBox(0.f, 0.f, 0.f, box.halfExtents.x * 2.f, box.halfExtents.y * 2.f, box.halfExtents.z * 2.f);
+        if (drawCollisionContacts) {
+                if (const auto* contacts = physicsWorld.getCollisionContacts()) {
+                        ofPushStyle();
+                        ofSetColor(252, 88, 88, 220);
+                        for (const auto& contact : *contacts) {
+                                const Vector3D& point = contact.contactPoint;
+                                const Vector3D& normal = contact.contactNormal;
+                                ofDrawSphere(point.x, point.y, point.z, 4.f);
+
+                                Vector3D tip = point + normal.scalar(22.f);
+                                ofSetLineWidth(2.f);
+                                ofDrawLine(point.x, point.y, point.z, tip.x, tip.y, tip.z);
+                        }
+                        ofPopStyle();
                 }
-                ofPopStyle();
-                ofPopMatrix();
         }
 
         if (drawOctree) {
