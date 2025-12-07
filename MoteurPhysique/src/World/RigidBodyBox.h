@@ -14,5 +14,6 @@ struct RigidBodyBox
         float boundingRadius = 1.f;
         bool reachedGoal = false;
         bool outOfBounds = false;
-		std::unique_ptr<Primitive> primitive;
+        bool isStaticPlatform = false;
+                std::unique_ptr<Primitive> primitive;
 };

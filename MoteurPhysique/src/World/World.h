@@ -55,6 +55,13 @@ public:
                                     const Vector3D& initialAngularVelocity = Vector3D()) const;
 
     /**
+     * @brief Crée une boîte statique utilisée comme plateforme de collision.
+     */
+    RigidBodyBox createStaticPlatformBox(const Vector3D& position,
+                                         const Vector3D& halfExtents,
+                                         const ofColor& color) const;
+
+    /**
      * @brief Génère une collection de pavés rigides aléatoires pour initialiser la scène du jeu.
      */
     std::vector<RigidBodyBox> createRigidBodyGame(int boxCount,

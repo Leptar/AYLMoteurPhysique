@@ -164,6 +164,36 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
     return boxes;
 }
 
+RigidBodyBox World::createStaticPlatformBox(const Vector3D& position,
+                                            const Vector3D& halfExtents,
+                                            const ofColor& color) const
+{
+    RigidBodyBox platform;
+    platform.isStaticPlatform = true;
+    platform.halfExtents = halfExtents;
+    platform.mass = 0.f;
+    platform.color = color;
+
+    auto primitiveBox = std::make_unique<Box>(halfExtents);
+    primitiveBox->corpsRigide = &platform.body;
+    platform.primitive = std::move(primitiveBox);
+
+    Vector3D radiusVec = halfExtents;
+    platform.boundingRadius = std::max(radiusVec.GetNorm(), 6.f);
+
+    platform.body.setInverseMasse(0.f);
+    platform.body.setInverseInertiaTensorBody(Matrix3(0.f, 0.f, 0.f,
+                                                      0.f, 0.f, 0.f,
+                                                      0.f, 0.f, 0.f));
+    platform.body.setOrientation(Quaternion(1.f, 0.f, 0.f, 0.f));
+    platform.body.setPosition(position);
+    platform.body.setVelocite(Vector3D(0.f, 0.f, 0.f));
+    platform.body.setVelociteAngulaire(Vector3D(0.f, 0.f, 0.f));
+    platform.body.clearAccumulators();
+
+    return platform;
+}
+
 void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
         if (!collisionSystem)
         {
@@ -260,10 +290,14 @@ void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
 
         // CorpsRigide
         for (auto& bodybox : rigidBodies) {
+                if (bodybox.isStaticPlatform) {
+                        bodybox.body.clearAccumulators();
+                        continue;
+                }
                 applyRigidBodyForces(bodybox.body, deltaTime);
 
-		bodybox.body.integrer(deltaTime);
-	}
+                bodybox.body.integrer(deltaTime);
+        }
 
         broadPhaseDetection(rigidBodies);
 
