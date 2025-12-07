@@ -33,4 +33,5 @@ public:
     void addCableConstraint(Primitive* p1, Primitive* p2, float maxLength, float restitution);
 
     void DetectBoxPlane(Box* box, Plane* plane);
+    void DetectBoxBox(Box* box1, Box* box2);
 };

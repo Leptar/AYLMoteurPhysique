@@ -185,34 +185,31 @@ void Octree::generatePairsForNode(std::vector<std::pair<Primitive*, Primitive*>>
 
 void Octree::generatePotentialCollisions(std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions)
 {
-    // 1. Générer les paires pour les objets contenus dans ce noeud
+    // 1. Générer les paires pour les objets contenus directement dans ce nœud.
     generatePairsForNode(potentialCollisions);
 
-    // 2. Si le noeud est subdivisé, générer les paires entre les objets de ce noeud
-    //    et les objets des noeuds enfants.
+    // 2. Si le nœud est subdivisé, générer les paires entre les objets de ce nœud
+    //    et les objets contenus directement dans les nœuds enfants.
     if (bHasBeenSubdivide)
     {
-        std::vector<Primitive*> childObjects;
-        for (auto& child : children)
+        // Pour chaque objet de ce nœud parent...
+        for (Primitive* parentObject : Objets)
         {
-            childObjects.clear();
-            childObjects = child->request(child->Area); // Récupère tous les objets du sous-arbre
-            for (Primitive* parentObj : Objets)
+            // ...on le teste contre tous les objets de tous les enfants.
+            for (const auto& child : children)
             {
-                for (Primitive* childObj : childObjects)
+                for (Primitive* childObject : child->Objets)
                 {
-                    if (parentObj < childObj)
-                    {
-                        potentialCollisions.emplace_back(parentObj, childObj);
-                    }
-                    else
-                    {
-                        potentialCollisions.emplace_back(childObj, parentObj);
+                    // On assure un ordre constant pour éviter les doublons.
+                    if (parentObject < childObject) {
+                        potentialCollisions.emplace_back(parentObject, childObject);
+                    } else {
+                        potentialCollisions.emplace_back(childObject, parentObject);
                     }
                 }
             }
         }
-        // 3. Appel récursif sur les enfants
+        // 3. Appel récursif sur les enfants pour qu'ils fassent de même.
         for (auto& child : children) child->generatePotentialCollisions(potentialCollisions);
     }
 }

@@ -141,9 +141,9 @@ void CorpsRigide::calculateWorldAABB(const Primitive& primitive)
         float ey = box->HalfExtent.y;
         float ez = box->HalfExtent.z;
 
-        float rxx = std::abs(m_transformMatrix.m[0]); float rxy = std::abs(m_transformMatrix.m[1]); float rxz = std::abs(m_transformMatrix.m[2]);
-        float ryx = std::abs(m_transformMatrix.m[4]); float ryy = std::abs(m_transformMatrix.m[5]); float ryz = std::abs(m_transformMatrix.m[6]);
-        float rzx = std::abs(m_transformMatrix.m[8]); float rzy = std::abs(m_transformMatrix.m[9]); float rzz = std::abs(m_transformMatrix.m[10]);
+        float rxx = std::abs(m_transformMatrix.m[0]); float rxy = std::abs(m_transformMatrix.m[4]); float rxz = std::abs(m_transformMatrix.m[8]);
+        float ryx = std::abs(m_transformMatrix.m[1]); float ryy = std::abs(m_transformMatrix.m[5]); float ryz = std::abs(m_transformMatrix.m[9]);
+        float rzx = std::abs(m_transformMatrix.m[2]); float rzy = std::abs(m_transformMatrix.m[6]); float rzz = std::abs(m_transformMatrix.m[10]);
 
         Vector3D halfSize(
             ex * rxx + ey * rxy + ez * rxz,

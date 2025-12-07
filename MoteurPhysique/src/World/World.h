@@ -48,7 +48,7 @@ public:
      * @brief Donne accès au système de détection pour y ajouter
      * des contraintes (tiges, câbles, plans).
      */
-    SystemCollisionDetection* getCollisionDetector();
+    SystemCollisionDetection* getParticleCollisionDetector();
 
     /**
      * @brief Crée et configure un pavé rigide prêt à être simulé.
@@ -68,17 +68,22 @@ public:
                                                   float boundsX,
                                                   float boundsZ) const;
 
+	void addStaticPlane(const Vector3D& normal, float offset);
+
 	void drawOctree() const;
 private:
     std::vector<Particule*> m_particules;
 
     ParticuleForceRegistry m_forceRegistry;
     RigidBodyForceRegistry m_rigidBodyForceRegistry;
-    SystemCollisionDetection m_collisionDetector;
+    SystemCollisionDetection m_particleCollisionDetector; // Pour les particules (Phase 2)
 
-	// Systeme de collision
-	std::unique_ptr<SystemeCollisionDetection> collisionSystem;
+	// Systeme de collision pour les corps rigides
+	std::unique_ptr<SystemeCollisionDetection> m_rigidBodyCollisionSystem;
 	
+	// Objets statiques de la scène (ex: plans)
+	std::vector<std::unique_ptr<Primitive>> m_staticGeometry;
+
 	// L'Octree, reconstruit à chaque frame
 	std::unique_ptr<Octree> m_octree;
 
@@ -87,7 +92,7 @@ private:
 
 	// Méthodes privées pour la détection de collision
 	void broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies);
-	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions);
+	void narrowPhaseDetection(const std::vector<std::pair<Primitive*, Primitive*>>& potentialCollisions, std::vector<RigidBodyBox>& rigidBodies);
 
     
 };

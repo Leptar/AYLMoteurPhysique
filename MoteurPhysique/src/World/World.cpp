@@ -23,7 +23,7 @@ Vector3D normalizedAxis(float x, float y, float z)
 
 World::World()
 {
-	collisionSystem = std::make_unique<SystemeCollisionDetection>();
+	m_rigidBodyCollisionSystem = std::make_unique<SystemeCollisionDetection>();
 
 	// Initialiser les limites du monde pour l'Octree.
 	float worldSize = 500.0f;
@@ -67,9 +67,9 @@ void World::applyRigidBodyForces(CorpsRigide& body, float deltaTime) const
     m_rigidBodyForceRegistry.updateForces(body, deltaTime);
 }
 
-SystemCollisionDetection* World::getCollisionDetector()
+SystemCollisionDetection* World::getParticleCollisionDetector()
 {
-    return &m_collisionDetector;
+    return &m_particleCollisionDetector;
 }
 
 RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
@@ -88,7 +88,6 @@ RigidBodyBox World::createRigidBodyBox(const Vector3D& position,
 
     // Créer la primitive Box avec les bonnes dimensions et l'associer au corps rigide.
     auto primitiveBox = std::make_unique<Box>(halfExtents);
-    primitiveBox->corpsRigide = &box.body;
     box.primitive = std::move(primitiveBox);
 
     Vector3D radiusVec = halfExtents;
@@ -168,6 +167,14 @@ std::vector<RigidBodyBox> World::createRigidBodyGame(int boxCount,
     return boxes;
 }
 
+void World::addStaticPlane(const Vector3D& normal, float offset)
+{
+    auto plane = std::make_unique<Plane>();
+    plane->normal = normal;
+    plane->PlaneOffset = offset;
+    m_staticGeometry.push_back(std::move(plane));
+}
+
 void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
 	// Construire l'octree
 	m_octree = std::make_unique<Octree>(m_worldBounds);
@@ -188,21 +195,21 @@ void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
 	potentialCollisions.erase(std::unique(potentialCollisions.begin(), potentialCollisions.end()), potentialCollisions.end());
 
 	// À ce stade, normalement `potentialCollisions` contient toutes les paires à tester en phase restreinte.
-	narrowPhaseDetection(potentialCollisions);
+	narrowPhaseDetection(potentialCollisions, rigidBodies);
 	
 	std::cout << "Collisions potentielles cette frame: " << potentialCollisions.size() << std::endl;
 }
 
-void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions)
+void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primitive *>> & potentialCollisions, std::vector<RigidBodyBox>& rigidBodies)
 {
     // 1. On vide les collisions de la frame précédente
-    if (collisionSystem) {
-        collisionSystem->clear();
+    if (m_rigidBodyCollisionSystem) {
+        m_rigidBodyCollisionSystem->clear();
     } else {
         return;
     }
 
-    // 2. On parcourt toutes les paires renvoyées par la Broad Phase
+    // 2. On parcourt toutes les paires dynamiques (Boîte-Boîte) renvoyées par la Broad Phase
     for (const auto& pair : potentialCollisions)
     {
         Primitive* p1 = pair.first;
@@ -210,22 +217,28 @@ void World::narrowPhaseDetection(const std::vector<std::pair<Primitive *, Primit
 
         if (!p1 || !p2) continue;
 
-        // 3. Identification des types (RTTI)
-        // On essaie de caster p1 et p2 en Box ou Plane
+        // Pour l'instant, on ne gère que Boîte-Boîte (qui sera implémenté plus tard)
         Box* box1 = dynamic_cast<Box*>(p1);
         Box* box2 = dynamic_cast<Box*>(p2);
-        Plane* plane1 = dynamic_cast<Plane*>(p1);
-        Plane* plane2 = dynamic_cast<Plane*>(p2);
 
-        // --- Cas : Boîte vs Plan ---
-        if (box1 && plane2)
-        {
-            collisionSystem->DetectBoxPlane(box1, plane2);
+        if (box1 && box2) {
+            m_rigidBodyCollisionSystem->DetectBoxBox(box1, box2);
         }
-        else if (plane1 && box2)
+    }
+
+    // 3. On teste chaque objet dynamique contre la géométrie statique (les plans)
+    for (auto& body_box : rigidBodies)
+    {
+        Box* box = dynamic_cast<Box*>(body_box.primitive.get());
+        if (!box) continue;
+
+        for (const auto& staticPrimitive : m_staticGeometry)
         {
-            // On inverse les arguments car DetectBoxPlane attend (Box, Plane)
-            collisionSystem->DetectBoxPlane(box2, plane1);
+            Plane* plane = dynamic_cast<Plane*>(staticPrimitive.get());
+            if (plane)
+            {
+                m_rigidBodyCollisionSystem->DetectBoxPlane(box, plane);
+            }
         }
     }
 }
@@ -241,22 +254,21 @@ void World::update(float deltaTime, std::vector<RigidBodyBox>& rigidBodies)
         p->clearForce();
     }
 
-    m_collisionDetector.resolveAll();
+    m_particleCollisionDetector.resolveAll(); // Résolution pour les particules
 
-	// CorpsRigide
+	// --- Simulation des Corps Rigides ---
+
+	// 1. Appliquer les forces et intégrer le mouvement
 	for (auto& bodybox : rigidBodies) {
 		applyRigidBodyForces(bodybox.body, deltaTime);
-
 		bodybox.body.integrer(deltaTime);
 	}
 
-	broadPhaseDetection(rigidBodies);
-	collisionSystem->resolveAll();
+	// 2. Détecter les collisions (Phases élargie et restreinte)
+    broadPhaseDetection(rigidBodies);
 
-	for (auto& bodybox : rigidBodies) {
-		bodybox.body.clearAccumulators();
-	}
-
+	// 3. Résoudre les collisions
+    m_rigidBodyCollisionSystem->resolveAll();
 }
 
 void World::drawOctree() const

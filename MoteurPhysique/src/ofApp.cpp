@@ -515,6 +515,15 @@ void ofApp::setupRigidBodyGame()
         rigidBodyCamera.lookAt(glm::vec3(0.f, rigidBodyFloorY + 80.f, 0.f));
         rigidBodyCamera.setAutoDistance(false);
 
+        // --- Ajout des plans de collision statiques ---
+        // Le sol
+        physicsWorld.addStaticPlane(Vector3D(0, 1, 0), rigidBodyFloorY);
+        // Les murs
+        physicsWorld.addStaticPlane(Vector3D(1, 0, 0), -rigidBodyBoundsX);
+        physicsWorld.addStaticPlane(Vector3D(-1, 0, 0), -rigidBodyBoundsX);
+        physicsWorld.addStaticPlane(Vector3D(0, 0, 1), -rigidBodyBoundsZ);
+        physicsWorld.addStaticPlane(Vector3D(0, 0, -1), -rigidBodyBoundsZ);
+
         performRigidBodyGameReset();
 }
 
@@ -523,6 +532,10 @@ void ofApp::setupRigidBodyGame()
 void ofApp::addRigidBodyBox(RigidBodyBox&& box)
 {
         rigidBodies.push_back(std::move(box));
+        // C'est le point crucial : une fois que la boîte est dans le vecteur, son adresse est stable.
+        // On met à jour le pointeur de sa primitive pour qu'il pointe vers le bon CorpsRigide.
+        RigidBodyBox& finalBox = rigidBodies.back();
+        finalBox.primitive->corpsRigide = &finalBox.body;
         ++totalRigidBodySpawned;
 }
 
@@ -543,7 +556,7 @@ void ofApp::performRigidBodyGameReset()
 
         goalCenter.y = rigidBodyFloorY;
 
-        auto initialBoxes = physicsWorld.createRigidBodyGame(100, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
+        auto initialBoxes = physicsWorld.createRigidBodyGame(10, dropperSpawnHeight, rigidBodyBoundsX, rigidBodyBoundsZ);
         for (auto& box : initialBoxes) {
                 addRigidBodyBox(std::move(box));
         }
