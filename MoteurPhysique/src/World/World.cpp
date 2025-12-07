@@ -6,6 +6,7 @@
 #include "ofMathConstants.h"
 
 #include "../MathStruct/Quaternion.h"
+#include <limits>
 
 namespace {
 
@@ -176,14 +177,69 @@ void World::addStaticPlane(const Vector3D& normal, float offset)
 }
 
 void World::broadPhaseDetection(std::vector<RigidBodyBox>& rigidBodies) {
-	// Construire l'octree
-	m_octree = std::make_unique<Octree>(m_worldBounds);
+        // Mettre à jour les AABB et adapter dynamiquement les limites du monde
+        bool hasBodies = false;
+        Vector3D sceneMin(
+                std::numeric_limits<float>::max(),
+                std::numeric_limits<float>::max(),
+                std::numeric_limits<float>::max());
+        Vector3D sceneMax(
+                std::numeric_limits<float>::lowest(),
+                std::numeric_limits<float>::lowest(),
+                std::numeric_limits<float>::lowest());
 
-	// MAJ AABB et insert dans le octree
-	for (auto & body_box : rigidBodies) {
-		body_box.body.calculateWorldAABB(*body_box.primitive);
-		m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
-	}
+        for (auto & body_box : rigidBodies) {
+                body_box.body.calculateWorldAABB(*body_box.primitive);
+                const AABB& aabb = body_box.body.worldAABB;
+
+                sceneMin.x = std::min(sceneMin.x, aabb.min.x);
+                sceneMin.y = std::min(sceneMin.y, aabb.min.y);
+                sceneMin.z = std::min(sceneMin.z, aabb.min.z);
+
+                sceneMax.x = std::max(sceneMax.x, aabb.max.x);
+                sceneMax.y = std::max(sceneMax.y, aabb.max.y);
+                sceneMax.z = std::max(sceneMax.z, aabb.max.z);
+
+                hasBodies = true;
+        }
+
+        if (hasBodies) {
+                const Vector3D padding(25.f, 25.f, 25.f);
+                m_worldBounds = AABB(sceneMin - padding, sceneMax + padding);
+        }
+
+        // Construire l'octree avec les limites mises à jour
+        m_octree = std::make_unique<Octree>(m_worldBounds);
+
+        // MAJ AABB et insert dans le octree
+        for (auto & body_box : rigidBodies) {
+                body_box.body.calculateWorldAABB(*body_box.primitive);
+                bool inserted = m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
+                if (!inserted) {
+                        body_box.outOfBounds = true;
+                        std::cout << "Insertion dans l'octree impossible pour un corps en position "
+                                  << body_box.body.getPosition().x << ", "
+                                  << body_box.body.getPosition().y << ", "
+                                  << body_box.body.getPosition().z << std::endl;
+
+                        // Optionnel : réinjecter le corps dans une zone de sécurité.
+                        Vector3D safePosition = body_box.body.getPosition();
+                        safePosition.x = ofClamp(safePosition.x, m_worldBounds.min.x + body_box.halfExtents.x, m_worldBounds.max.x - body_box.halfExtents.x);
+                        safePosition.y = ofClamp(safePosition.y, m_worldBounds.min.y + body_box.halfExtents.y, m_worldBounds.max.y - body_box.halfExtents.y);
+                        safePosition.z = ofClamp(safePosition.z, m_worldBounds.min.z + body_box.halfExtents.z, m_worldBounds.max.z - body_box.halfExtents.z);
+
+                        if (safePosition.x != body_box.body.getPosition().x ||
+                            safePosition.y != body_box.body.getPosition().y ||
+                            safePosition.z != body_box.body.getPosition().z) {
+                                body_box.body.setPosition(safePosition);
+                                body_box.body.calculateWorldAABB(*body_box.primitive);
+                                inserted = m_octree->insert(body_box.primitive.get(), body_box.body.worldAABB);
+                                body_box.outOfBounds = !inserted;
+                        }
+                } else {
+                        body_box.outOfBounds = false;
+                }
+        }
 
 	// Genere les paires potentielles en parcourant l'Octree
 	std::vector<std::pair<Primitive*, Primitive*>> potentialCollisions;
