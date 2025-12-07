@@ -25,6 +25,11 @@ void SystemeCollisionDetection::add(Primitive* p1, Primitive* p2, const Vector3D
     detectedCollisions.push_back(contact);
 }
 
+void SystemeCollisionDetection::setPlaneRestitution(float restitution)
+{
+        planeRestitution = std::max(0.f, restitution);
+}
+
 void SystemeCollisionDetection::addPlane(Primitive* p1, Primitive* p2, const Vector3D& point, const Vector3D& normal, float penetration, float restitution, collision_type type)
 {
     if (!p1 || !p2) return;
@@ -300,7 +305,7 @@ void SystemeCollisionDetection::DetectBoxPlane(Box* box, Plane* plane)
     {
         // Le point de contact est le sommet le plus profond.
         // La pénétration est la valeur absolue de la distance.
-        add(box, plane, deepestVertex, planeNormal, -minDistance, 0.5f, collision_type::Contact);
+        add(box, plane, deepestVertex, planeNormal, -minDistance, planeRestitution, collision_type::Contact);
     }
 }
 

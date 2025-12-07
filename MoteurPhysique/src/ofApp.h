@@ -88,7 +88,6 @@ private:
         float rigidBodyBoundsX = 320.f;
         float rigidBodyBoundsZ = 320.f;
         float rigidBodyBounce = 0.55f;
-        float rigidBodyFloorFriction = 0.8f;
         Vector3D goalCenter = Vector3D(0.f, -220.f, -80.f);
         float goalSize = 160.f;
 

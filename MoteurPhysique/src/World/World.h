@@ -64,10 +64,19 @@ public:
     /**
      * @brief Génère une collection de pavés rigides aléatoires pour initialiser la scène du jeu.
      */
-    std::vector<RigidBodyBox> createRigidBodyGame(int boxCount,
+        std::vector<RigidBodyBox> createRigidBodyGame(int boxCount,
                                                   float dropperSpawnHeight,
                                                   float boundsX,
                                                   float boundsZ) const;
+
+        /**
+         * @brief Définit les limites utilisées pour l'octree et les plans de confinement.
+         */
+        void setSimulationBounds(float halfSizeX, float halfSizeZ, float floorY, float ceilingY);
+
+        void setBoundaryRestitution(float restitution);
+
+        const AABB& getSimulationBounds() const;
 
         void drawOctree() const;
         const std::vector<Contact>* getCollisionContacts() const;

@@ -518,6 +518,12 @@ void ofApp::setupRigidBodyGame()
         rigidBodyCamera.lookAt(glm::vec3(0.f, rigidBodyFloorY + 80.f, 0.f));
         rigidBodyCamera.setAutoDistance(false);
 
+        // Les limites de la simulation doivent correspondre à l'aire de jeu visible
+        // pour que les corps rigides ne puissent pas s'échapper dans le vide.
+        float ceilingY = dropperSpawnHeight + 180.f;
+        physicsWorld.setSimulationBounds(rigidBodyBoundsX, rigidBodyBoundsZ, rigidBodyFloorY, ceilingY);
+        physicsWorld.setBoundaryRestitution(rigidBodyBounce);
+
         performRigidBodyGameReset();
 }
 
@@ -608,6 +614,11 @@ void ofApp::updateRigidBodyGame(float dt)
 
         physicsWorld.update(dt, rigidBodies);
 
+        for (auto& box : rigidBodies) {
+                applyRigidBodyBounds(box);
+                handleRigidBodyGoal(box);
+        }
+
 }
 
 
@@ -694,6 +705,56 @@ void ofApp::drawRigidBodyGame()
 
         rigidBodyCamera.end();
         ofDisableDepthTest();
+}
+
+//--------------------------------------------------------------
+void ofApp::applyRigidBodyBounds(RigidBodyBox& box)
+{
+        if (box.isStaticPlatform || box.outOfBounds || box.reachedGoal) {
+                return;
+        }
+
+        Vector3D position = box.body.getPosition();
+
+        const AABB& bounds = physicsWorld.getSimulationBounds();
+        float verticalMargin = 120.f;
+
+        bool outside = position.x < (bounds.min.x - box.halfExtents.x)
+                        || position.x > (bounds.max.x + box.halfExtents.x)
+                        || position.z < (bounds.min.z - box.halfExtents.z)
+                        || position.z > (bounds.max.z + box.halfExtents.z)
+                        || position.y < (bounds.min.y - verticalMargin)
+                        || position.y > (bounds.max.y + verticalMargin);
+
+        if (outside) {
+                box.outOfBounds = true;
+                ++rigidBodyLost;
+                box.body.setVelocite(Vector3D());
+                box.body.setVelociteAngulaire(Vector3D());
+        }
+}
+
+//--------------------------------------------------------------
+void ofApp::handleRigidBodyGoal(RigidBodyBox& box)
+{
+        if (box.isStaticPlatform || box.outOfBounds || box.reachedGoal) {
+                return;
+        }
+
+        Vector3D position = box.body.getPosition();
+        float halfGoal = goalSize * 0.5f;
+
+        bool withinX = std::abs(position.x - goalCenter.x) <= halfGoal - box.halfExtents.x;
+        bool withinZ = std::abs(position.z - goalCenter.z) <= halfGoal - box.halfExtents.z;
+        bool touchingFloor = position.y <= rigidBodyFloorY + box.halfExtents.y + 2.f;
+
+        if (withinX && withinZ && touchingFloor) {
+                box.reachedGoal = true;
+                ++rigidBodyScore;
+
+                box.body.setVelocite(Vector3D());
+                box.body.setVelociteAngulaire(Vector3D());
+        }
 }
 
 //--------------------------------------------------------------
